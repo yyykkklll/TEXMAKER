@@ -11,6 +11,52 @@
 
 ---
 
+## About
+
+This repository hosts the LaTeX source code for our research paper on advancing Text-to-Image Person Re-Identification (TPRe-ID) through innovative feature decoupling techniques powered by Multi-Modal Large Language Models (MLLMs).
+
+### What is This Project?
+
+Person Re-Identification (Re-ID) is a critical computer vision task that aims to identify and track individuals across different camera views in surveillance systems. Text-to-Image Person Re-Identification specifically focuses on retrieving target individuals from large-scale image galleries using natural language descriptions—a challenging cross-modal matching problem.
+
+### The Challenge We Address
+
+Traditional TPRe-ID methods face significant limitations:
+- **Fine-grained semantic alignment**: Difficulty in precisely matching detailed textual descriptions with visual features
+- **Clothing interference**: Variations in clothing can mislead identity recognition systems
+- **Modality gap**: The inherent differences between visual and textual representations hinder effective cross-modal matching
+- **Coupled features**: Existing methods treat identity features (gender, body shape) and non-identity features (clothing, accessories) together, limiting discrimination capability
+
+### Our Innovation
+
+We propose a novel framework that fundamentally changes how person re-identification handles feature representation:
+
+1. **MLLM-Guided Decoupling**: We leverage Multi-Modal Large Language Models to automatically generate separate, fine-grained descriptions for identity attributes and clothing attributes
+2. **Bidirectional Decoupling Alignment Module (BDAM)**: A sophisticated architecture that explicitly separates and aligns identity and clothing features using dual-branch attention mechanisms
+3. **Mamba State Space Model Integration**: The first integration of Mamba SSM into cross-modal Re-ID, providing efficient long-range dependency modeling with linear complexity
+4. **Multi-Task Loss Strategy**: Combines adversarial loss and orthogonal constraints to enforce feature independence and purity
+
+### Key Contributions
+
+- **Automatic annotation generation** through MLLM for fine-grained identity and clothing descriptions
+- **Explicit feature decoupling** that separates identity-relevant from identity-irrelevant information
+- **State-of-the-art performance** on benchmark datasets while maintaining computational efficiency
+- **Robust cross-modal matching** that handles complex real-world scenarios with clothing variations and background clutter
+
+### Who Should Use This?
+
+This research is valuable for:
+- **Computer vision researchers** working on person re-identification and cross-modal retrieval
+- **Surveillance system developers** building intelligent security and public safety applications
+- **Academic institutions** teaching advanced topics in multimodal learning and attention mechanisms
+- **Industry practitioners** developing video analytics and person tracking systems
+
+### Repository Purpose
+
+This repository provides all necessary LaTeX files, figures, and bibliography to reproduce our academic paper, enabling researchers to understand our methodology, replicate our results, and build upon our contributions to the field.
+
+---
+
 ## Abstract
 
 > ***The challenge of fine-grained semantic alignment contin ues to hinder Text-to-Image Person Re-Identification, where clothing-induced interference and a persistent modality gap degrade retrieval accuracy. We introduce a novel framework that decouples identity and clothing features through Multi-Modal Large Language Model (MLLM)-guided supervision, enabling robust cross-modal matching.***

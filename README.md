@@ -3,9 +3,9 @@
 
 ***This repository contains the official LaTeX source code for our paper:***
 
-***Author:***KeLong Yan
+***Aurhor:*** *<u>KeLong Yan</u>*
 
-***arXiv :***To be determined
+***arXiv:*** *<u>To be determined</u>*
 
 ***Gthub Code:***[yyykkklll/Text-based-Person-Retrieval_V3: 🎓基于文本指导的行人重识别（Text-to-Image ReID）模型，采用 ViT + BERT 架构，并融合门控机制与身份-衣物解纠缠技术。模型已实现多个数据集的训练与评估，后续将持续优化和扩展架构。🚀📚](https://github.com/yyykkklll/Text-based-Person-Retrieval_V3)
 

@@ -1,0 +1,24 @@
+\section{Related Work}
+\subsection{Feature Disentanglement}
+\noindent Feature disentanglement~\cite{wangDisentangledRepresentationLearning2024} aims to separate semantically distinct factors in feature space to improve interpret ability and generalization.
+Early approaches often leveraged generative models (VAEs, GANs)\cite{liuMultitaskAdversarialNetwork2018} to partition latent codes into structured factors.
+More recently, disentanglement has expanded beyond generation to image classification\cite{sanchezLearningDisentangledRepresentations2019}, NLP~\cite{chengImprovingDisentangledText2020}, and multimodal learning~\cite{materzynskaDisentanglingVisualWritten2022}.
+Mainstream strategies include min–max multi-task adversarial training that jointly optimizes an encoder and a style discriminator~\cite{liuMultitaskAdversarialNetwork2018}; metric-learning schemes such as DFR~\cite{chengDisentangledFeatureRepresentation2021} with Gradient Reversal Layer~\cite{ganinUnsupervisedDomainAdaptation2015} to decorrelate factors;
+and orthogonal linear projections that separate visual and textual embeddings under CLIP~\cite{materzynskaDisentanglingVisualWritten2022}.
+In Re-ID, disentanglement typically separates identity-relevant signals from nuisances \cite{liDisentanglingIdentityFeatures2024,azadActivityBiometricsPersonIdentification2024}. Generative designs model these factors independently;
+in vehicle Re-ID, DFLNet\cite{baiDisentangledFeatureLearning2020} jointly extracts orientation-specific and generic features. For occlusion, ProFD~\cite{cuiProFDPromptGuidedFeature2024} uses text prompts to isolate body-part features.
+Clothing-changing Re-ID often adopts dual-stream architectures to counter appearance shifts and camera bias~\cite{liDisentanglingIdentityFeatures2024}.
+These efforts improve semantic purity and factor independence, yet two limitations persist.
+First, without an effective interaction mechanism, isolated factors may fail to support robust cross-modal matching, leading to brittle alignment.
+Second, reliance on manual annotations or external detectors constrains scalability and domain transfer, and implicit regularizers can be underconstrained, yielding spurious separations on unseen data.
+Consequently, recent work emphasizes coupling disentanglement with principled interactions and independence constraints.
+In this spirit, our framework pairs data-side decoupling with model-side disentanglement and independence enforcement, providing explicit supervision and controllable separation while preserving cross-modal synergy.
+\subsection{Feature Fusion}
+\noindent Feature fusion is central to T2I-ReID, with most methods relying on Transformers or CLIP~\cite{schmidtRobustCanonicalizationBootstrapped2025}.
+Cross-modal modules built on multi-head attention process image–text tokens in parallel to capture semantic associations~\cite{yinGraFTGradualFusion2023}, but their quadratic complexity in sequence length causes memory and latency spikes for high-resolution images or long descriptions.
+CLIP-based pipelines~\cite{kimExtendingCLIPImageText2024} benefit from large-scale contrastive pretraining and well-aligned embeddings, yet global pooling and holistic processing often blur identity versus clothing cues, leading to semantic confusion under clothing changes or verbose descriptions.
+Dynamic fusion that reweights modalities via attention can improve adaptivity~\cite{fengKnowledgeGuidedDynamicModality2024}, but introduces higher computational cost, tuning sensitivity, and performance instability across datasets.
+Graph-based fusion~\cite{liLearningGraphNeural2023} models dependencies through GNNs, offering relational inductive bias, whereas assumptions about graph structure and stationarity limit adaptability to free-form, variable-length text and dynamic visual contexts.
+Contemporary evidence suggests that accuracy and robustness improve only when semantic disentanglement and efficient fusion advance in tandem.
+Practically, fusion should (i) respect factorized semantics (e.g., identity/clothing) to avoid re-coupling nuisances, (ii) capture long-range cross-modal dependencies, and (iii) scale with linear or near-linear complexity to handle long sequences and high-res tokens.
+This motivates our design: BDAM supplies factor-aware representations and decoupled supervision, while a Mamba SSM fusion module models long-horizon interactions with linear complexity, enabling precise alignment without the memory and efficiency bottlenecks of standard Transformers.

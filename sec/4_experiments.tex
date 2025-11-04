@@ -1,0 +1,249 @@
+\section{Experiments}
+\label{sec:experiments}
+\subsection{Datasets and Metrics}
+\noindent \textbf{CUHK-PEDES \cite{liPersonSearchNaturalLanguageDescription2017}} The first dataset built for T2I-ReID, containing 40,206 images of 13,003 identities, with two text descriptions per image.
+We follow the official split: 34,054 images from 11,003 identities for training, 3,078 images from 1,000 identities for validation, and 3,074 images from another 1,000 identities for testing.
+
+\textbf{ICFG-PEDES \cite{zhuDSSLDeepSurroundings2021}} This dataset includes 54,552 images of 4,102 identities, each paired with one human-annotated description.
+The official split provides 34,674 image–text pairs from 3,102 identities for training and 19,848 pairs from the remaining 1,000 identities for testing.
+
+\textbf{RSTPReid \cite{dingSemanticallySelfAlignedNetwork2021}} This dataset covers 4,104 identities captured by 15 cameras, totaling 20,505 images.
+Each identity has five images from different viewpoints, and each image has two descriptions.
+Following the official split, training uses data from 3,701 identities, while validation and testing each use data from 200 identities.
+
+\textbf{Evaluation Metrics} In line with existing studies, we adopt Rank-k (for k=1, 5, 10) and mean Average Precision (mAP) as the evaluation metrics for the aforementioned benchmarks.
+\subsection{Implementation Details}\label{sec:4.2}
+\noindent We use a pre-trained bert-base-uncased as the text encoder (hidden size 768) and vit-base-patch16-224 as the visual encoder, resizing all images to 224×224.
+Image features are processed by BDAM with multi-layer self- and cross-attention, splitting them into identity and clothing features (both 768-d).
+A two-layer Mamba fusion module (input/output 256, state 16, conv kernel 4) then fuses the multimodal features. Dropout is 0.1.
+Training uses Adam with a learning rate of $1 \times 10^{-4}$, weight decay $1 \times 10^{-3}$, and a cosine annealing scheduler.
+The multi-task objective combines InfoNCE and triplet losses with clothing adversarial, disentanglement, and gate-regularization terms.
+We adopt GradNorm for adaptive task weighting with coefficient $\alpha$ of 1.5 and a weight learning rate of 0.025;
+weights are normalized so $\sum w_i = T$ (where T is the number of tasks) and clipped to [$10^{-4}$, 10].
+Gradient norms are computed on the last shared layer. An additional log-weight regularizer $1 \times 10^{-3}$ is applied.
+For data construction, we extract style features with clip-vit-base-patch32, cluster styles via DBSCAN to form style prompts, and use ChatGPT-4o to generate style-consistent identity and clothing descriptions.
+Splits are enforced at the identity level with no overlap. All experiments are run with seeds 0, 1, and 2;
+we select the best checkpoint on the validation set for testing and report the mean over three runs.
+
+\subsection{Ablation Study}
+\noindent In this paper, we conduct a series of ablation studies on various components of our model: the disentanglement module, the fusion module, the loss functions, and the style feature prompts—to ensure the reproducibility and comparability of our experimental results.
+\begin{table}[htbp]
+    \centering
+    \caption{End to end model enhancement.}
+    \label{tab:enhancement_fit}
+    \vspace{-0.3cm}
+    \setlength{\tabcolsep}{4pt}
+    \footnotesize
+    \begin{tabular}{lcccc}
+        \toprule
+        Method          & mAP(\%) $\uparrow$ & R1(\%) $\uparrow$ & R5(\%) $\uparrow$ & R10(\%) $\uparrow$ \\
+        \midrule
+        Baseline        & 59.81              & 70.54             & 85.49             & 91.26              \\
+        + BDAM          & 66.74              & 76.27             & 89.30             & 94.02              \\
+        + Fusion        & 69.58              & 78.42             & 90.74             & 95.11              \\
+        + Multi Loss    & 71.22              & 79.18             & 91.51             & 95.79              \\
+        + Style Prompts & 72.61              & 79.93             & 92.95             & 96.47              \\
+        \bottomrule
+    \end{tabular}
+    \vspace{-0.2cm}
+\end{table}
+\noindent \textbf{Model Architectures.} The comparisons are shown in \cref{tab:enhancement_fit}. In the architectural ablation, progressively adding BDAM, the Mamba SSM fusion, and the multi-task loss to the base model yields consistent gains across all metrics. With the further addition of Style Prompts, the model achieves its peak performance: mAP improves from 71.22\% to \textbf{72.61\%} and Rank-1 improves from 79.18\% to \textbf{79.93\%}. This confirms that the richer textual diversity provided by the prompts enhances both the overall ranking (mAP and Rank-10) and the top-1 match accuracy. Overall, each component contributes positively to performance.
+\begin{table}[htbp]
+    \centering
+    \caption{Ablation on the BDAM module.}
+    \label{tab:ablation_bdam}
+    \vspace{-0.3cm}
+    \setlength{\tabcolsep}{4pt}
+    \footnotesize
+    \begin{tabular}{lcccc}
+        \toprule
+        Method              & mAP(\%) $\uparrow$ & R1(\%) $\uparrow$ & R5(\%) $\uparrow$ & R10(\%) $\uparrow$ \\
+        \midrule
+        Baseline(w/o BDAM)  & 59.81              & 70.54             & 85.49             & 91.26              \\
+        + BDAM              & 66.74              & 76.27             & 89.30             & 94.02              \\
+        w/o Cross-Attention & 62.56              & 71.39             & 87.05             & 92.98              \\
+        w/o Gate            & 65.11              & 74.63             & 88.77             & 93.56              \\
+        Shallow(3-layer)    & 64.27              & 73.74             & 88.09             & 93.32              \\
+        \bottomrule
+    \end{tabular}
+    \vspace{-0.2cm}
+\end{table}
+
+As shown in \cref{tab:ablation_bdam}, BDAM yields a substantial gain over the baseline (Rank-1: 70.54\% → 76.27\%).
+Within BDAM, both bidirectional cross-attention and gating are crucial: removing cross-attention (w/o Cross-Attention) drops Rank-1 to 71.39\% (-4.88 pp), and removing the gate (w/o Gate) also degrades performance.
+Using a shallower architecture further hurts results, indicating that deeper semantic modeling strengthens identity/clothing disentanglement and overall robustness.
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\linewidth]{images/cuhk_pedes.png}
+    \caption{t-SNE visualization comparison.
+        (a) Baseline (w/o disentanglement) produces a highly entangled 2D point cloud with heavy identity overlap, indicating identity–clothing coupling.
+        (b) With BDAM + HSIC, embeddings form tighter same-identity clusters, clearer inter-identity boundaries, and a center-to-periphery color gradient reflecting progressive identity–clothing disentanglement.}
+    \label{fig:demo}
+\end{figure}
+
+To assess BDAM's disentanglement geometrically, we visualize features with t-SNE;
+see \cref{fig:demo}. (a) The baseline produces a highly mixed 2D embedding with heavy identity overlap, indicating severe coupling between identity and non-identity semantics.
+(b) With BDAM plus HSIC, the space becomes well structured: identity features (colored and gray dots) and clothing features (red "x") split into two independent regions.
+Within the identity region, same-identity points form compact clusters with clear margins between identities.
+This geometry corroborates the orthogonality induced by the disentanglement mechanism and explains the marked performance gains, consistent with \cref{tab:ablation_bdam}.
+
+The comparisons are shown in \cref{tab:ablation_fusion}.In the Fusion module ablation, the full design (Full Fusion)—i.e., the "+Fusion" row in Table 1 built on BDAM—achieves the best performance with Rank-1 = 78.42\%.Removing any component (Mamba, gated fusion, or modal alignment) degrades results;
+dropping Mamba has the largest impact (Rank-1 → 75.73\%), highlighting its role in modeling long-sequence cross-modal interactions.
+Removing gating or alignment causes smaller declines, suggesting they provide auxiliary flexibility in fusion.
+\begin{table}[htbp]
+    \centering
+    \caption{Ablation on Fusion Module.}
+    \label{tab:ablation_fusion}
+    \vspace{-0.3cm}
+    \setlength{\tabcolsep}{4pt}
+    \footnotesize
+    \begin{tabular}{lcccc}
+        \toprule
+        Method               & mAP(\%) $\uparrow$ & R1(\%) $\uparrow$ & R5(\%) $\uparrow$ & R10(\%) $\uparrow$ \\
+        \midrule
+        Baseline(w/o Fusion) & 59.81              & 70.54             & 85.49             & 91.26              \\
+        Full Fusion          & 69.58              & 78.42             & 90.74             & 95.11              \\
+        w/o Mamba            & 66.89              & 75.73             & 89.06             & 93.92              \\
+        w/o Gate-Fusion      & 68.64              & 77.58             & 90.11             & 94.87              \\
+        w/o Align            & 68.15              & 77.09             & 89.84             & 94.53              \\
+        \bottomrule
+    \end{tabular}
+    \vspace{-0.2cm}
+\end{table}
+\begin{table}[htbp]
+    \centering
+    \caption{Ablation on Individual Loss Components.}
+    \label{tab:ablation_loss}
+    \vspace{-0.3cm}
+    \setlength{\tabcolsep}{4pt}
+    \footnotesize
+    \begin{tabular}{lcccc}
+        \toprule
+        Method            & mAP(\%) $\uparrow$ & R1(\%) $\uparrow$ & R5(\%) $\uparrow$ & R10(\%) $\uparrow$ \\
+        \midrule
+        \rowcolor{gray!20}
+        Full Model        & 72.61              & 79.93             & 92.95             & 96.47              \\
+        w/o InfoNCE Loss  & 28.14              & 36.55             & 55.21             & 65.83              \\
+        w/o Triplet Loss  & 67.22              & 74.89             & 88.15             & 93.12              \\
+        w/o Adv Loss      & 69.15              & 76.92             & 89.53             & 94.22              \\
+        w/o Decouple Loss & 70.03              & 77.81             & 90.11             & 94.98              \\
+        w/o Gate Loss     & 71.98              & 79.23             & 91.35             & 95.71              \\
+        \bottomrule
+    \end{tabular}
+    \vspace{-0.2cm}
+\end{table}
+
+\noindent \textbf{Loss Functions.} To validate the necessity of each component within our designed multi-task loss framework, this section takes the best-performing dynamic weight model (Full Model) as the baseline and conducts an ablation study by removing each individual loss term one by one. The results are presented in \cref{tab:ablation_loss}.
+The results show that every loss term contributes positively. InfoNCE and Triplet are pivotal: removing InfoNCE nearly collapses performance (\textbf{mAP-44.47\%}, \textbf{Rank-1-43.38\%}), underscoring cross-modal contrastive learning as foundational; dropping Triplet also causes a marked decline, confirming the need for strong intra-modal identity discrimination. Disentanglement losses (Adv, Decouple) are likewise critical—removing either degrades results, indicating architecture-only implicit disentanglement is insufficient and explicit constraints are required to separate identity from clothing. Removing the Gate regularization (w/o Gate Loss) also hurts performance, validating its auxiliary role in stabilizing the gating mechanism.
+\begin{table}[htbp]
+    \centering
+    \caption{Ablation on style prompts.}
+    \label{tab:ablation_style_prompts}
+    \vspace{-0.3cm}
+    \setlength{\tabcolsep}{4pt}
+    \footnotesize
+    \begin{tabular}{lcccc}
+        \toprule
+        Method               & mAP (\%) & R1 (\%) & R5 (\%) & R10 (\%) \\
+        \midrule
+        Baseline (w/o Style) & 71.22    & 79.18   & 91.51   & 95.79    \\
+        + Random             & 71.95    & 79.54   & 91.66   & 95.82    \\
+        + KMeans             & 71.85    & 79.20   & 91.60   & 95.90    \\
+        + GMM                & 71.70    & 79.05   & 91.50   & 95.75    \\
+        + Agglomerative      & 71.78    & 79.10   & 91.55   & 95.80    \\
+        + HDBSCAN            & 72.20    & 79.40   & 91.95   & 96.10    \\
+        \rowcolor{gray!20}
+        + DBSCAN             & 72.61    & 79.93   & 92.95   & 96.47    \\
+        \bottomrule
+    \end{tabular}
+    \vspace{-0.2cm}
+\end{table}
+
+\noindent \textbf{Style Prompts.} To evaluate the effectiveness of different clustering strategies in generating style prompts, we conduct a comprehensive comparison of various clustering methods.
+\cref{tab:ablation_style_prompts} reports the impact of clustering strategies for style prompts.
+Relative to the multi-task baseline in Table 1, randomly sampled prompts yield only marginal gains, underscoring the importance of prompt quality.
+Centroid-based methods (K-Means, GMM) provide modest improvements but require a preset number of clusters and are sensitive to varying densities, producing prompts with weaker semantic consistency;
+agglomerative (hierarchical) clustering shows similar limitations. In contrast, density-based methods better handle noise and irregular cluster shapes: HDBSCAN improves robustness, while DBSCAN achieves the best mAP and Rank-10.
+By avoiding a preset cluster count and automatically identifying noise, DBSCAN generates style-consistent, highly discriminative prompts, striking an optimal balance between performance and simplicity;
+hence, we adopt it as our final approach.
+
+\subsection{Efficiency Analysis}
+\begin{table*}[!t]
+    \centering
+    \caption{Comparisons with state-of-the-art ReID methods under the traditional evaluation setting.}
+    \label{tab:sota_comparison}
+    \vspace{-0.3cm}
+    \resizebox{\textwidth}{!}{
+        \begin{tabular}{l|c|cccc|cccc|cccc}
+            \thickhline
+            \multirow{2}{*}{\textbf{Method}}
+                                                                       & \multirow{2}{*}{\textbf{Backbone}}
+                                                                       & \multicolumn{4}{c}{\textbf{CUHK-PEDES}}
+                                                                       & \multicolumn{4}{c}{\textbf{ICFG-PEDES}}
+                                                                       & \multicolumn{4}{c}{\text{RSTPReid}}                                                                                                                                                                                  \\
+            \hhline{~~|----|----|----}                                 &
+                                                                       & \textbf{R-1}                            & \textbf{R-5}   & \textbf{R-10}  & \textbf{mAP}   & \textbf{R-1} & \textbf{R-5} & \textbf{R-10} & \textbf{mAP} & \textbf{R-1} & \textbf{R-5} & \textbf{R-10} & \textbf{mAP} \\
+            \hline
+            \multicolumn{14}{l}{\small\textbf{\textit{Methods with CLIP backbone:}}}                                                                                                                                                                                                          \\
+            \hline
+            IRRA\cite{jiangCrossModalImplicitRelation2023}             & CLIP-ViT
+                                                                       & 73.38                                   & 89.93          & 93.71          & 66.10          & 63.36        & 80.82        & 85.82         & 38.06        & 60.20        & 81.30        & 88.20         & 47.17        \\
+            IRLT\cite{liuCausalityInspiredInvariantRepresentation2024} & CLIP-ViT
+                                                                       & 73.67                                   & 89.71          & 93.57          & 65.94          & 63.57        & 80.57        & 86.32         & 38.34        & 60.51        & 82.85        & 89.71         & 47.64        \\
+            CFAM\cite{zuoUFineBenchTowardsTextbased2024}               & CLIP-ViT
+                                                                       & 74.46                                   & 90.19          & 94.01          & -              & 64.72        & 81.35        & 86.31         & -            & 61.49        & 82.26        & 89.23         & -            \\
+            Propot\cite{yanPrototypicalPromptingTexttoimage2024}       & CLIP-ViT
+                                                                       & 74.89                                   & 89.90          & 94.17          & 67.12          & 65.12        & 81.57        & 86.97         & 42.93        & 61.87        & 83.63        & 89.70         & 47.82        \\
+            RDE\cite{qinNoisyCorrespondenceLearningTexttoImage2024}    & CLIP-ViT
+                                                                       & 75.94                                   & 90.14          & 94.12          & 67.56          & 67.68        & 82.47        & 87.36         & 40.06        & 65.35        & 83.95        & 89.90         & 50.88        \\
+            HAM\cite{jiangModelingThousandsHuman2025}                  & CLIP-ViT
+                                                                       & 77.99                                   & 91.34          & 95.03          & 69.72          & 69.95        & 83.88        & 88.39         & 42.72        & 72.50        & 87.70        & 91.95         & 55.47        \\
+            \hline
+            \multicolumn{14}{l}{\small\textbf{\textit{Methods with ViT backbone:}}}                                                                                                                                                                                                           \\
+            \hline
+            CPCL\cite{zhengCPCLCrossModalPrototypical2024}             & ViT
+                                                                       & 70.03                                   & 87.28          & 91.78          & 63.19          & 62.60        & 79.07        & 84.46         & 36.16        & 58.35        & 81.05        & 87.65         & 45.81        \\
+            PDReid\cite{liPromptDecouplingTexttoImage2024}             & ViT
+                                                                       & 71.59                                   & 87.95          & 92.45          & 65.03          & 60.93        & 77.96        & 84.11         & 36.44        & 56.65        & 77.40        & 84.70         & 45.27        \\
+            SSAN\cite{dingSemanticallySelfAlignedNetwork2021}          & ViT
+                                                                       & 61.37                                   & 80.15          & 86.73          & -              & 54.23        & 72.63        & 79.53         & -            & 43.50        & 67.80        & 77.15         & -            \\
+            CFine\cite{yanCLIPDrivenFinegrainedTextImage2022}          & ViT
+                                                                       & 69.57                                   & 85.93          & 91.15          & -              & 60.83        & 76.55        & 82.42         & -            & 50.55        & 72.50        & 81.60         & -            \\
+            IVT\cite{shuSeeFinerSeeMore2022}                           & ViT
+                                                                       & 65.59                                   & 83.11          & 89.21          & -              & 56.04        & 73.60        & 80.22         & -            & 46.70        & 70.00        & 78.80         & -            \\
+            \thickhline
+            \rowcolor{gray!20}
+            Ours                                                       & ViT
+                                                                       & \textbf{79.93}                          & \textbf{92.95} & \textbf{96.47} & \textbf{72.61}
+                                                                       & \textbf{68.68}                          & \textbf{84.29} & \textbf{89.74} & \textbf{41.78}
+                                                                       & \textbf{74.33}                          & \textbf{88.85} & \textbf{92.95} & \textbf{57.68}                                                                                                                           \\
+            \thickhline
+        \end{tabular}
+    }
+    \vspace{-0.2cm}
+\end{table*}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.95\columnwidth]{Figure4.pdf}
+    \caption{Comparative analysis of model efficiency and performance on CUHK-PEDES.
+        Each subplot presents a key metric, enabling direct trade-off comparisons.
+        Model abbreviations: Simple (S), Transformer-2Layer (T(2)), Performer (P), Transformer-4Layer (T(4)), and Ours.}
+    \label{fig:efficiency_comparison}
+\end{figure}
+\noindent This section quantitatively evaluates the computational efficiency of the proposed Mamba-based fusion module.
+We report key efficiency metrics and compare it against alternative fusion strategies under an identical hardware setup.
+
+As visualized in Figure~\ref{fig:efficiency_comparison}, our proposed method demonstrates a superior balance between accuracy and efficiency. The trajectory for its mAP resides at the top of the plot, achieving a competitive \textbf{72.61\%}, which is nearly identical to the best-performing but computationally intensive \textbf{Trans(4)} model (72.99\%). Concurrently, the trend lines for all of our model's cost-related metrics—Params, FLOPs, and Training VRAM are positioned at the bottom of the chart, closely mirroring the lightweight \textbf{Simple} baseline. This combination of a high-performance trajectory with low-cost trajectories visually confirms an exceptional efficiency-to-performance ratio.
+
+\subsection{Comparisons with State-of-the-Art Methods}
+\noindent To demonstrate the superior performance of our method, we conduct comprehensive comparisons with state-of-the-art text-to-image person re-identification approaches across three mainstream benchmark datasets;
+results are reported in \cref{tab:sota_comparison}.
+
+On CUHK-PEDES, our method achieves a Rank-1 accuracy of 79.93\% and an mAP of 72.61\%, marking a substantial improvement over traditional ViT-based methods (e.g., CPCL, PDReid) and outperforming the recent CLIP-based method HAM (77.99\% / 69.72\%).
+This indicates that, even without leveraging CLIP's large-scale pre-trained weights, our identity–clothing decoupling structure and efficient fusion strategy deliver superior cross-modal alignment.
+On ICFG-PEDES, our approach attains a Rank-1 accuracy of 68.68\%, comparable to HAM (69.95\%) and significantly better than methods such as RDE and Propot, further validating the effectiveness of decoupled modeling under clothing variations.
+On RSTPReid, we achieve the current best results—Rank-1 of 74.33\% and mAP of 57.68\%—surpassing all ViT-based methods and substantially outperforming HAM (72.50\% / 55.47\%).
+These gains underscore the robustness and generalization of our decoupling and fusion mechanism in complex, multi-camera, cross-scene settings.
+In summary, our method performs strongly across all three public datasets, setting new state-of-the-art results on CUHK-PEDES and RSTPReid while remaining highly competitive on ICFG-PEDES.
+These findings consistently validate the effectiveness of the Bidirectional Decoupling Alignment Module for Identity and Clothing (BDAM), the Mamba-based fusion strategy, and the importance of multi-task optimization with dynamic weight adjustment for cross-modal person re-identification.

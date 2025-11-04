@@ -1,0 +1,29 @@
+% --- 正文 ---
+\section{Introduction}
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\columnwidth]{Figure1}
+    \caption{Comparison of ReID methods.(a) Traditional: Direct fusion of image and text features without distinguishing identity from non-identity information limits alignment.(b) Proposed (BDAM): Introduces a decoupling module that aligns separated identity/clothing features with MLLM-generated descriptions for fine-grained matching.}
+    \label{fig:figure1}
+\end{figure}
+\label{sec:intro}
+\noindent Text-to-image person re-identification (T2I-ReID) retrieves a target pedestrian from a large-scale image gallery given a natural-language description~\cite{jiangCrossModalImplicitRelation2023, yanLearningComprehensiveRepresentations2023,shaoLearningGranularityUnifiedRepresentations2022, dingSemanticallySelfAlignedNetwork2021}.
+It is valuable for video surveillance~\cite{bukhariLanguageVisionBased2023}, intelligent security~\cite{galiyawalaPersonRetrievalSurveillance2021}, public safety, and social media.
+Despite recent progress, practical deployment remains challenging: image factors (pose, viewpoint, illumination) obscure identity-relevant cues, and a persistent modality gap hampers effective fusion in a shared space.These issues are exacerbated at the fine-grained level, where semantic alignment is particularly difficult.
+
+A core challenge in T2I-ReID is the semantic gap between images and text.
+Early work attempted to reduce this discrepancy by projecting global visual and textual features into a shared space~\cite{wangLearningDeepStructurePreserving2016,wangLanguagePersonSearch2019,liPersonSearchNatural2017}, but high intra-class variance and low inter-class variance across both modalities hinder reliable cross-modal matching.
+To overcome this, subsequent studies introduced feature disentanglement, broadly via explicit or implicit alignment~\cite{gaoContextualNonLocalAlignment2021,wangCAIBCCapturingAllround2022}.
+Explicit methods~\cite{wangViTAAVisualTextualAttributes2020,dingSemanticallySelfAlignedNetwork2021} detect body parts or attributes and align local regions and phrases with auxiliary modules.
+Implicit methods~\cite{jiangCrossModalImplicitRelation2023,shaoLearningGranularityUnifiedRepresentations2022} avoid external tools and use regularizers to associate noun phrases with image regions.
+This progression demonstrates that distinguishing identity-relevant from identity-irrelevant semantics is essential; therefore, disentanglement has become a key avenue to advance T2I-ReID.
+
+Despite this progress, most recent methods, which often adopt ViT as the image encoder~\cite{dosovitskiyImageWorth16x162021,tanHarnessingPowerMLLMs2024,zuoPLIPLanguageImagePretraining2024,yangUnifiedTextbasedPerson2023,heInstructReIDUniversalPurpose2025,liPromptDecouplingTexttoImage2024} or leverage CLIP to benefit from large-scale contrastive pretraining~\cite{radfordLearningTransferableVisual2021,yaoFILIPFinegrainedInteractive2021,niuLLMLocBootstrapSingleimage2025,zhaoLuoJiaHOGHierarchyOriented2024}, still face a critical limitation.
+Both lines commonly treat the description holistically, overlooking the distinction between identity-relevant (e.g., gender, body shape) and identity-irrelevant (e.g., clothing, hairstyle) content.
+In complex scenes with background clutter, large clothing variations, or redundant details, this coarse treatment blurs identity cues, weakens feature decoupling, and degrades cross-modal matching robustness.
+
+To address this challenge, we propose a novel framework centered on MLLM-supervised feature decoupling.
+Instead of treating features holistically, we draw on the style-clustering paradigm~\cite{jiangModelingThousandsHuman2025} and leverage an MLLM to automatically generate fine-grained, separate identity and clothing descriptions.
+These decoupled annotations provide explicit supervision for our Bidirectional Decoupling Alignment Module (BDAM) to explicitly separate and align identity and clothing information.
+This disentanglement is enforced by a multi-task loss strategy, including an adversarial loss and an HSIC-based orthogonality constraint, as detailed in our \cref{sec:method}.
+Furthermore, to enhance alignment, we are the first to integrate the Mamba State Space Model (SSM) as an efficient fusion module, capturing long-range cross-modal dependencies with linear complexity.Our main contributions are threefold: (1) A prompt auto-construction pipeline that combines style clustering with an MLLM to produce fine-grained, decoupled identity and clothing descriptions; (2) The BDAM, which achieves precise decoupling and alignment reinforced by a multi-task loss strategy combining an adversarial loss and an HSIC-based orthogonality constraint; and (3) The novel integration of a Mamba SSM fusion module that models long-range cross-modal dependencies with linear complexity.

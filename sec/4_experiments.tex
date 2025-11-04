@@ -70,7 +70,7 @@ we select the best checkpoint on the validation set for testing and report the m
 \end{table}
 
 As shown in \cref{tab:ablation_bdam}, BDAM yields a substantial gain over the baseline (R1: 70.54\% → 76.27\%).
-Within BDAM, both bidirectional cross-attention and gating are crucial: removing cross-attention (w/o Cross-Attention) drops R1 to 71.39\% (-4.88 pp), and removing the gate (w/o Gate) also degrades performance.
+Within BDAM, both bidirectional cross-attention and gating are crucial: removing cross-attention drops R1 to 71.39\%, and removing the gate also degrades performance.
 Using a shallower architecture further hurts results, indicating that deeper semantic modeling strengthens identity/clothing disentanglement and overall robustness.
 \begin{figure}[htbp]
     \centering

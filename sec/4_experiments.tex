@@ -4,14 +4,14 @@
 \noindent \textbf{CUHK-PEDES \cite{liPersonSearchNaturalLanguageDescription2017}} The first dataset built for T2I-ReID, containing 40,206 images of 13,003 identities, with two text descriptions per image.
 We follow the official split: 34,054 images from 11,003 identities for training, 3,078 images from 1,000 identities for validation, and 3,074 images from another 1,000 identities for testing.
 
-\textbf{ICFG-PEDES \cite{zhuDSSLDeepSurroundings2021}} This dataset includes 54,552 images of 4,102 identities, each paired with one human-annotated description.
+\noindent \textbf{ICFG-PEDES \cite{zhuDSSLDeepSurroundings2021}} This dataset includes 54,552 images of 4,102 identities, each paired with one human-annotated description.
 The official split provides 34,674 image–text pairs from 3,102 identities for training and 19,848 pairs from the remaining 1,000 identities for testing.
 
-\textbf{RSTPReid \cite{dingSemanticallySelfAlignedNetwork2021}} This dataset covers 4,104 identities captured by 15 cameras, totaling 20,505 images.
+\noindent \textbf{RSTPReid \cite{dingSemanticallySelfAlignedNetwork2021}} This dataset covers 4,104 identities captured by 15 cameras, totaling 20,505 images.
 Each identity has five images from different viewpoints, and each image has two descriptions.
 Following the official split, training uses data from 3,701 identities, while validation and testing each use data from 200 identities.
 
-\textbf{Evaluation Metrics} In line with existing studies, we adopt Rank-k (for k=1, 5, 10) and mean Average Precision (mAP) as the evaluation metrics for the aforementioned benchmarks.
+\noindent \textbf{Evaluation Metrics} In line with existing studies, we adopt R-k (for k=1, 5, 10) and mean Average Precision (mAP) as the evaluation metrics for the aforementioned benchmarks.
 \subsection{Implementation Details}\label{sec:4.2}
 \noindent We use a pre-trained bert-base-uncased as the text encoder (hidden size 768) and vit-base-patch16-224 as the visual encoder, resizing all images to 224×224.
 Image features are processed by BDAM with multi-layer self- and cross-attention, splitting them into identity and clothing features (both 768-d).
@@ -47,7 +47,7 @@ we select the best checkpoint on the validation set for testing and report the m
     \end{tabular}
     \vspace{-0.2cm}
 \end{table}
-\noindent \textbf{Model Architectures.} The comparisons are shown in \cref{tab:enhancement_fit}. In the architectural ablation, progressively adding BDAM, the Mamba SSM fusion, and the multi-task loss to the base model yields consistent gains across all metrics. With the further addition of Style Prompts, the model achieves its peak performance: mAP improves from 71.22\% to \textbf{72.61\%} and Rank-1 improves from 79.18\% to \textbf{79.93\%}. This confirms that the richer textual diversity provided by the prompts enhances both the overall ranking (mAP and Rank-10) and the top-1 match accuracy. Overall, each component contributes positively to performance.
+\noindent \textbf{Model Architectures.} The comparisons are shown in \cref{tab:enhancement_fit}. In the architectural ablation, progressively adding BDAM, the Mamba SSM fusion, and the multi-task loss to the base model yields consistent gains across all metrics. With the further addition of Style Prompts, the model achieves its peak performance: mAP improves from 71.22\% to \textbf{72.61\%} and R1 improves from 79.18\% to \textbf{79.93\%}. This confirms that the richer textual diversity provided by the prompts enhances both the overall ranking (mAP and R10) and the top-1 match accuracy. Overall, each component contributes positively to performance.
 \begin{table}[htbp]
     \centering
     \caption{Ablation on the BDAM module.}
@@ -69,8 +69,8 @@ we select the best checkpoint on the validation set for testing and report the m
     \vspace{-0.2cm}
 \end{table}
 
-As shown in \cref{tab:ablation_bdam}, BDAM yields a substantial gain over the baseline (Rank-1: 70.54\% → 76.27\%).
-Within BDAM, both bidirectional cross-attention and gating are crucial: removing cross-attention (w/o Cross-Attention) drops Rank-1 to 71.39\% (-4.88 pp), and removing the gate (w/o Gate) also degrades performance.
+As shown in \cref{tab:ablation_bdam}, BDAM yields a substantial gain over the baseline (R1: 70.54\% → 76.27\%).
+Within BDAM, both bidirectional cross-attention and gating are crucial: removing cross-attention (w/o Cross-Attention) drops R1 to 71.39\% (-4.88 pp), and removing the gate (w/o Gate) also degrades performance.
 Using a shallower architecture further hurts results, indicating that deeper semantic modeling strengthens identity/clothing disentanglement and overall robustness.
 \begin{figure}[htbp]
     \centering
@@ -87,8 +87,8 @@ see \cref{fig:demo}. (a) The baseline produces a highly mixed 2D embedding with 
 Within the identity region, same-identity points form compact clusters with clear margins between identities.
 This geometry corroborates the orthogonality induced by the disentanglement mechanism and explains the marked performance gains, consistent with \cref{tab:ablation_bdam}.
 
-The comparisons are shown in \cref{tab:ablation_fusion}.In the Fusion module ablation, the full design (Full Fusion)—i.e., the "+Fusion" row in Table 1 built on BDAM—achieves the best performance with Rank-1 = 78.42\%.Removing any component (Mamba, gated fusion, or modal alignment) degrades results;
-dropping Mamba has the largest impact (Rank-1 → 75.73\%), highlighting its role in modeling long-sequence cross-modal interactions.
+The comparisons are shown in \cref{tab:ablation_fusion}.In the Fusion module ablation, the full design (Full Fusion)—i.e., the "+Fusion" row in Table 1 built on BDAM—achieves the best performance with R1 = 78.42\%.Removing any component (Mamba, gated fusion, or modal alignment) degrades results;
+dropping Mamba has the largest impact (R1 → 75.73\%), highlighting its role in modeling long-sequence cross-modal interactions.
 Removing gating or alignment causes smaller declines, suggesting they provide auxiliary flexibility in fusion.
 \begin{table}[htbp]
     \centering
@@ -134,7 +134,7 @@ Removing gating or alignment causes smaller declines, suggesting they provide au
 \end{table}
 
 \noindent \textbf{Loss Functions.} To validate the necessity of each component within our designed multi-task loss framework, this section takes the best-performing dynamic weight model (Full Model) as the baseline and conducts an ablation study by removing each individual loss term one by one. The results are presented in \cref{tab:ablation_loss}.
-The results show that every loss term contributes positively. InfoNCE and Triplet are pivotal: removing InfoNCE nearly collapses performance (\textbf{mAP-44.47\%}, \textbf{Rank-1-43.38\%}), underscoring cross-modal contrastive learning as foundational; dropping Triplet also causes a marked decline, confirming the need for strong intra-modal identity discrimination. Disentanglement losses (Adv, Decouple) are likewise critical—removing either degrades results, indicating architecture-only implicit disentanglement is insufficient and explicit constraints are required to separate identity from clothing. Removing the Gate regularization (w/o Gate Loss) also hurts performance, validating its auxiliary role in stabilizing the gating mechanism.
+The results show that every loss term contributes positively. InfoNCE and Triplet are pivotal: removing InfoNCE nearly collapses performance ({mAP:44.47\%}, {R1:43.38\%}), underscoring cross-modal contrastive learning as foundational; dropping Triplet also causes a marked decline, confirming the need for strong intra-modal identity discrimination. Disentanglement losses (Adv, Decouple) are likewise critical—removing either degrades results, indicating architecture-only implicit disentanglement is insufficient and explicit constraints are required to separate identity from clothing. Removing the Gate regularization (w/o Gate Loss) also hurts performance, validating its auxiliary role in stabilizing the gating mechanism.
 \begin{table}[htbp]
     \centering
     \caption{Ablation on style prompts.}
@@ -163,7 +163,7 @@ The results show that every loss term contributes positively. InfoNCE and Triple
 \cref{tab:ablation_style_prompts} reports the impact of clustering strategies for style prompts.
 Relative to the multi-task baseline in Table 1, randomly sampled prompts yield only marginal gains, underscoring the importance of prompt quality.
 Centroid-based methods (K-Means, GMM) provide modest improvements but require a preset number of clusters and are sensitive to varying densities, producing prompts with weaker semantic consistency;
-agglomerative (hierarchical) clustering shows similar limitations. In contrast, density-based methods better handle noise and irregular cluster shapes: HDBSCAN improves robustness, while DBSCAN achieves the best mAP and Rank-10.
+agglomerative (hierarchical) clustering shows similar limitations. In contrast, density-based methods better handle noise and irregular cluster shapes: HDBSCAN improves robustness, while DBSCAN achieves the best mAP and R10.
 By avoiding a preset cluster count and automatically identifying noise, DBSCAN generates style-consistent, highly discriminative prompts, striking an optimal balance between performance and simplicity;
 hence, we adopt it as our final approach.
 
@@ -240,10 +240,10 @@ As visualized in Figure~\ref{fig:efficiency_comparison}, our proposed method dem
 \noindent To demonstrate the superior performance of our method, we conduct comprehensive comparisons with state-of-the-art text-to-image person re-identification approaches across three mainstream benchmark datasets;
 results are reported in \cref{tab:sota_comparison}.
 
-On CUHK-PEDES, our method achieves a Rank-1 accuracy of 79.93\% and an mAP of 72.61\%, marking a substantial improvement over traditional ViT-based methods (e.g., CPCL, PDReid) and outperforming the recent CLIP-based method HAM (77.99\% / 69.72\%).
+On CUHK-PEDES, our method achieves a R1 accuracy of 79.93\% and an mAP of 72.61\%, marking a substantial improvement over traditional ViT-based methods (e.g., CPCL, PDReid) and outperforming the recent CLIP-based method HAM (77.99\% / 69.72\%).
 This indicates that, even without leveraging CLIP's large-scale pre-trained weights, our identity–clothing decoupling structure and efficient fusion strategy deliver superior cross-modal alignment.
-On ICFG-PEDES, our approach attains a Rank-1 accuracy of 68.68\%, comparable to HAM (69.95\%) and significantly better than methods such as RDE and Propot, further validating the effectiveness of decoupled modeling under clothing variations.
-On RSTPReid, we achieve the current best results—Rank-1 of 74.33\% and mAP of 57.68\%—surpassing all ViT-based methods and substantially outperforming HAM (72.50\% / 55.47\%).
+On ICFG-PEDES, our approach attains a R1 accuracy of 68.68\%, comparable to HAM (69.95\%) and significantly better than methods such as RDE and Propot, further validating the effectiveness of decoupled modeling under clothing variations.
+On RSTPReid, we achieve the current best results, attaining a Rank-1 accuracy of 74.33\% and an mAP of 57.68\%.This performance surpasses all ViT-based methods and substantially outperforms HAM (72.50\% / 55.47\%).
 These gains underscore the robustness and generalization of our decoupling and fusion mechanism in complex, multi-camera, cross-scene settings.
 In summary, our method performs strongly across all three public datasets, setting new state-of-the-art results on CUHK-PEDES and RSTPReid while remaining highly competitive on ICFG-PEDES.
 These findings consistently validate the effectiveness of the Bidirectional Decoupling Alignment Module for Identity and Clothing (BDAM), the Mamba-based fusion strategy, and the importance of multi-task optimization with dynamic weight adjustment for cross-modal person re-identification.

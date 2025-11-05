@@ -61,7 +61,7 @@ $H = I_{N} - (1/N) \mathbf{1}_{N} \mathbf{1}_{N}^{T}$ is the centering matrix, w
 HSIC measures the statistical dependence between features by calculating the mean trace of the product of their kernel matrices and the centering matrix.
 By minimizing this value, the loss encourages the features to be statistically independent.
 
-\subsection{MLLM}
+\subsection{Semantic enhancement}
 \noindent We employ an MLLM(specifically, ChatGPT-4o as detailed in ~\ref{sec:4.2}) to automatically generate fine-grained identity and clothing descriptions for pedestrians, reducing manual annotation and enriching supervision.
 Prior work, notably HAM~\cite{jiangModelingThousandsHuman2025}, shows that modeling annotator styles can steer an MLLM to produce diverse texts.
 Building on our reproduction of HAM, we adapt and extend the pipeline to meet our model's design goals.

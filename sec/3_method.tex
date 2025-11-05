@@ -28,7 +28,7 @@ It dynamically models and facilitates interaction among the disentangled multi-m
 
 \subsection{Bidirectional Decoupled Alignment Module}
 \noindent Some studies directly adopt CLIP~\cite{radfordLearningTransferableVisual2021} as a dual-modality feature extractor and align global embeddings for retrieval or discrimination.
-However, two limitations arise: (i) limited fine-grained semantics hinder separating identity from clothing, and (ii) holistic image–text encoding lacks token-level cross-modal structure modeling, reducing robustness in complex scenes.
+However, this approach presents two key limitations. First, its limited fine-grained semantics hinder the separation of identity from clothing. Second, its holistic image-text encoding lacks token-level cross-modal structure modeling, which reduces robustness in complex scenes.
 In this paper, we use a pre-trained ViT (ViT-B/16) as the visual encoder $E_v$~\cite{dosovitskiyImageWorth16x162021}.
 Given an image $I_i$, $E_v$ outputs token features $f_i \in \mathbb{R}^{B \times L \times D}$ that entangle identity-relevant and identity-irrelevant cues.
 A dual-branch linear projection yields preliminary identity features $f_{\text{id}}' \in \mathbb{R}^{B \times L \times D}$, and clothing features $f_{\text{clo}}' \in \mathbb{R}^{B \times L \times D}$, followed by multi-layer self-attention in each branch to enhance local consistency and contextual awareness.

@@ -44,13 +44,13 @@ To empirically validate these mechanisms, we analyze the distributions of learne
     \footnotesize
     \begin{tabular}{lcccc}
         \toprule
-        Method              & mAP(\%) $\uparrow$ & R-1(\%) $\uparrow$ & R-5(\%) $\uparrow$ & R-10(\%) $\uparrow$ \\
+        Method                 & mAP(\%) $\uparrow$ & R-1(\%) $\uparrow$ & R-5(\%) $\uparrow$ & R-10(\%) $\uparrow$ \\
         \midrule
-        Baseline(w/o BDAM)  & 59.81              & 70.54              & 85.49              & 91.26               \\
-        + BDAM              & 66.74              & 76.27              & 89.30              & 94.02               \\
-        \quad w/o Cross-Attn & 62.56             & 71.39              & 87.05              & 92.98               \\
-        \quad w/o Gate       & 65.11             & 74.63              & 88.77              & 93.56               \\
-        \quad Shallow(3-layer) & 64.27           & 73.74              & 88.09              & 93.32               \\
+        Baseline(w/o BDAM)     & 59.81              & 70.54              & 85.49              & 91.26               \\
+        + BDAM                 & 66.74              & 76.27              & 89.30              & 94.02               \\
+        \quad w/o Cross-Attn   & 62.56              & 71.39              & 87.05              & 92.98               \\
+        \quad w/o Gate         & 65.11              & 74.63              & 88.77              & 93.56               \\
+        \quad Shallow(3-layer) & 64.27              & 73.74              & 88.09              & 93.32               \\
         \bottomrule
     \end{tabular}
     \vspace{-0.2cm}
@@ -60,29 +60,21 @@ To empirically validate these mechanisms, we analyze the distributions of learne
 
 \begin{figure}[htbp]
     \centering
-    % --- 替换了插图文件 ---
     \includegraphics[width=\linewidth]{disentanglement_tsne_academic.pdf}
-    % --- 修改了图注以匹配新图 ---
-    \caption{t-SNE visualization comparing feature distributions. 
-(a) The baseline model's 'Entangled Features' show poor separation, with clusters for different identities (e.g., ID 1090 and ID 1099) positioned very closely. 
-(b) With BDAM and HSIC regularization, the 'Disentangled Features' show a clear separation: identity features (dots) form a distinct cluster [cite: 165, 167-172], while 'Clothing' features (marked by 'x') occupy an independent region on the right.}
+    \caption{t-SNE visualization comparing feature distributions.
+        (a) The baseline model's 'Entangled Features' [cite: 407] show poor separation, with clusters for different identities (e.g., ID 1090 [cite: 411] and ID 1099 [cite: 412]) positioned very closely.
+        (b) With BDAM and HSIC regularization, the 'Disentangled Features'  show a clear separation: 'Clothing' features (marked by 'x')  occupy an independent region on the **left** , while identity features (dots)  form a distinct cluster on the **right**.}
     \label{fig:demo}
 \end{figure}
-% \begin{figure}[htbp]
-%     \centering
-%     \includegraphics[width=\linewidth]{images/cuhk_pedes.png}
-%     \caption{t-SNE visualization comparing feature distributions. (a) The baseline model produces highly entangled embeddings with severe identity overlap, indicating coupling between identity and clothing features. (b) With BDAM and HSIC regularization, the feature space exhibits clear separation: identity features form compact, well-separated clusters, while clothing features occupy distinct regions, validating effective disentanglement.}
-%     \label{fig:demo}
-% \end{figure}
 
-To qualitatively assess disentanglement quality, we visualize learned features using t-SNE dimensionality reduction in \cref{fig:demo}. The baseline model produces a highly mixed embedding space with extensive identity overlap, indicating severe entanglement between identity and appearance attributes. In contrast, incorporating BDAM with HSIC regularization yields a well-structured feature space wherein identity embeddings form tight, well-separated clusters, while clothing features occupy independent regions. Within the identity cluster, same-person samples exhibit strong intra-class cohesion with clear inter-class boundaries. This geometric structure confirms the orthogonality enforced by our disentanglement mechanism and provides visual evidence for the quantitative performance gains observed in \cref{tab:ablation_bdam}.
+To qualitatively assess disentanglement quality, we visualize learned features using t-SNE dimensionality reduction in \cref{fig:demo}. (a) The baseline model produces a highly mixed embedding space with extensive identity overlap[cite: 407], indicating severe entanglement between identity and appearance attributes. (b) In contrast, incorporating BDAM with HSIC regularization yields a well-structured feature space wherein identity embeddings form tight, well-separated clusters on the right, while clothing features occupy an independent region on the left[cite: 419, 430, 431, 432, 433, 434, 435, 436]. Within the identity cluster, same-person samples exhibit strong intra-class cohesion with clear inter-class boundaries[cite: 437, 438, 439, 440, 441]. This geometric structure confirms the orthogonality enforced by our disentanglement mechanism and provides visual evidence for the quantitative performance gains observed in \cref{tab:ablation_bdam}.
 
 \begin{table}[htbp]
     \centering
     \caption{Ablation study on the fusion module.}
     \label{tab:ablation_fusion}
     \vspace{-0.3cm}
-    \setlength{\tabcolsep}{4pt}
+    \setlength{\tabcolsep}{3.5pt}
     \footnotesize
     \begin{tabular}{lcccc}
         \toprule
@@ -90,9 +82,9 @@ To qualitatively assess disentanglement quality, we visualize learned features u
         \midrule
         Baseline(w/o Fusion) & 59.81              & 70.54              & 85.49              & 91.26               \\
         Full Fusion          & 69.58              & 78.42              & 90.74              & 95.11               \\
-        \quad w/o Mamba       & 66.89             & 75.73              & 89.06              & 93.92               \\
-        \quad w/o Gate        & 68.64             & 77.58              & 90.11              & 94.87               \\
-        \quad w/o Alignment   & 68.15             & 77.09              & 89.84              & 94.53               \\
+        \quad w/o Mamba      & 66.89              & 75.73              & 89.06              & 93.92               \\
+        \quad w/o Gate       & 68.64              & 77.58              & 90.11              & 94.87               \\
+        \quad w/o Alignment  & 68.15              & 77.09              & 89.84              & 94.53               \\
         \bottomrule
     \end{tabular}
     \vspace{-0.2cm}
@@ -109,15 +101,15 @@ To qualitatively assess disentanglement quality, we visualize learned features u
     \footnotesize
     \begin{tabular}{lcccc}
         \toprule
-        Method            & mAP(\%) $\uparrow$ & R-1(\%) $\uparrow$ & R-5(\%) $\uparrow$ & R-10(\%) $\uparrow$ \\
+        Method          & mAP(\%) $\uparrow$ & R-1(\%) $\uparrow$ & R-5(\%) $\uparrow$ & R-10(\%) $\uparrow$ \\
         \midrule
         \rowcolor{gray!20}
-        Full Model        & 72.61              & 79.93              & 92.95              & 96.47               \\
-        w/o InfoNCE       & 28.14              & 36.55              & 55.21              & 65.83               \\
-        w/o Triplet       & 67.22              & 74.89              & 88.15              & 93.12               \\
-        w/o Adversarial   & 69.15              & 76.92              & 89.53              & 94.22               \\
-        w/o Decoupling    & 70.03              & 77.81              & 90.11              & 94.98               \\
-        w/o Gate Reg.     & 71.98              & 79.23              & 91.35              & 95.71               \\
+        Full Model      & 72.61              & 79.93              & 92.95              & 96.47               \\
+        w/o InfoNCE     & 28.14              & 36.55              & 55.21              & 65.83               \\
+        w/o Triplet     & 67.22              & 74.89              & 88.15              & 93.12               \\
+        w/o Adversarial & 69.15              & 76.92              & 89.53              & 94.22               \\
+        w/o Decoupling  & 70.03              & 77.81              & 90.11              & 94.98               \\
+        w/o Gate Reg.   & 71.98              & 79.23              & 91.35              & 95.71               \\
         \bottomrule
     \end{tabular}
     \vspace{-0.2cm}
@@ -155,14 +147,14 @@ To qualitatively assess disentanglement quality, we visualize learned features u
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=\columnwidth]{Figure5.pdf}
-    \caption{Efficiency-performance comparison on CUHK-PEDES. Our Mamba-based fusion achieves competitive accuracy with minimal computational overhead. All metrics normalized where higher is better.}
+    \includegraphics[width=\columnwidth]{Figure6.pdf}
+    \caption{Efficiency-performance comparison on CUHK-PEDES. All metrics normalized to [0, 100] where higher is better (cost metrics inverted: lower resource usage → higher score). Our Mamba-based fusion achieves competitive accuracy with minimal computational overhead.}
     \label{fig:efficiency_comparison}
 \end{figure}
 
-\noindent As shown in \cref{fig:efficiency_comparison}, our Mamba-based fusion module achieves an optimal balance in the accuracy-efficiency trade-off space. The normalized comparison demonstrates near-peak performance across all dimensions while maintaining computational costs comparable to lightweight baselines. 
+\noindent As shown in \cref{fig:efficiency_comparison}, our Mamba-based fusion module achieves an optimal balance in the accuracy-efficiency trade-off space. All metrics are normalized such that higher scores consistently indicate superior performance—for cost-related metrics (Params, FLOPs, Memory), lower resource consumption translates to higher normalized scores, while performance metrics (mAP, Speed) are directly normalized.
 
-\noindent This efficiency advantage stems from the Mamba state-space architecture's ability to model long-range dependencies without the quadratic complexity of self-attention. Compared to Transformer-4Layer, our method delivers competitive retrieval accuracy with substantially lower resource consumption. Against the Simple baseline, Mamba achieves marked accuracy improvements with only modest computational overhead, confirming its suitability for practical deployment.
+\noindent The visualization reveals that Mamba maintains near-peak performance across all dimensions. Compared to Transformer-4Layer, our method delivers competitive retrieval accuracy (reflected in comparable mAP scores) while achieving substantially higher efficiency scores in Params, FLOPs, and Memory—confirming lower computational overhead. Against the Simple baseline, Mamba demonstrates marked mAP improvements while maintaining comparable efficiency scores, validating superior resource utilization.
 
 \subsection{Comparisons with State-of-the-Art Methods}
 \begin{table*}[!t]
@@ -174,46 +166,46 @@ To qualitatively assess disentanglement quality, we visualize learned features u
         \begin{tabular}{l|c|cccc|cccc|cccc}
             \thickhline
             \multirow{2}{*}{\textbf{Method}}
-                                                                       & \multirow{2}{*}{\textbf{Backbone}}
-                                                                       & \multicolumn{4}{c|}{\textbf{CUHK-PEDES}}
-                                                                       & \multicolumn{4}{c|}{\textbf{ICFG-PEDES}}
-                                                                       & \multicolumn{4}{c}{\textbf{RSTPReid}}                                                                                                                                                                                  \\
-            \hhline{~~|----|----|----}                                 &
-                                                                       & \textbf{R-1}                            & \textbf{R-5}   & \textbf{R-10}  & \textbf{mAP}   & \textbf{R-1} & \textbf{R-5} & \textbf{R-10} & \textbf{mAP} & \textbf{R-1} & \textbf{R-5} & \textbf{R-10} & \textbf{mAP} \\
+                                                                        & \multirow{2}{*}{\textbf{Backbone}}
+                                                                        & \multicolumn{4}{c|}{\textbf{CUHK-PEDES}}
+                                                                        & \multicolumn{4}{c|}{\textbf{ICFG-PEDES}}
+                                                                        & \multicolumn{4}{c}{\textbf{RSTPReid}}                                                                                                                                                                                 \\
+            \hhline{~~|----|----|----}                                  &
+                                                                        & \textbf{R-1}                             & \textbf{R-5}   & \textbf{R-10}  & \textbf{mAP}   & \textbf{R-1} & \textbf{R-5} & \textbf{R-10} & \textbf{mAP} & \textbf{R-1} & \textbf{R-5} & \textbf{R-10} & \textbf{mAP} \\
             \hline
-            \multicolumn{14}{l}{\small\textit{Methods with CLIP backbone:}}                                                                                                                                                                                                            \\
+            \multicolumn{14}{l}{\small\textit{Methods with CLIP backbone:}}                                                                                                                                                                                                                     \\
             \hline
-            IRRA~\cite{jiangCrossModalImplicitRelation2023}            & CLIP-ViT
-                                                                       & 73.38                                   & 89.93          & 93.71          & 66.10          & 63.36        & 80.82        & 85.82         & 38.06        & 60.20        & 81.30        & 88.20         & 47.17        \\
+            IRRA~\cite{jiangCrossModalImplicitRelation2023}             & CLIP-ViT
+                                                                        & 73.38                                    & 89.93          & 93.71          & 66.10          & 63.36        & 80.82        & 85.82         & 38.06        & 60.20        & 81.30        & 88.20         & 47.17        \\
             IRLT~\cite{liuCausalityInspiredInvariantRepresentation2024} & CLIP-ViT
-                                                                       & 73.67                                   & 89.71          & 93.57          & 65.94          & 63.57        & 80.57        & 86.32         & 38.34        & 60.51        & 82.85        & 89.71         & 47.64        \\
-            CFAM~\cite{zuoUFineBenchTowardsTextbased2024}              & CLIP-ViT
-                                                                       & 74.46                                   & 90.19          & 94.01          & -              & 64.72        & 81.35        & 86.31         & -            & 61.49        & 82.26        & 89.23         & -            \\
-            Propot~\cite{yanPrototypicalPromptingTexttoimage2024}      & CLIP-ViT
-                                                                       & 74.89                                   & 89.90          & 94.17          & 67.12          & 65.12        & 81.57        & 86.97         & 42.93        & 61.87        & 83.63        & 89.70         & 47.82        \\
-            RDE~\cite{qinNoisyCorrespondenceLearningTexttoImage2024}   & CLIP-ViT
-                                                                       & 75.94                                   & 90.14          & 94.12          & 67.56          & 67.68        & 82.47        & 87.36         & 40.06        & 65.35        & 83.95        & 89.90         & 50.88        \\
-            HAM~\cite{jiangModelingThousandsHuman2025}                 & CLIP-ViT
-                                                                       & 77.99                                   & 91.34          & 95.03          & 69.72          & 69.95        & 83.88        & 88.39         & 42.72        & 72.50        & 87.70        & 91.95         & 55.47        \\
+                                                                        & 73.67                                    & 89.71          & 93.57          & 65.94          & 63.57        & 80.57        & 86.32         & 38.34        & 60.51        & 82.85        & 89.71         & 47.64        \\
+            CFAM~\cite{zuoUFineBenchTowardsTextbased2024}               & CLIP-ViT
+                                                                        & 74.46                                    & 90.19          & 94.01          & -              & 64.72        & 81.35        & 86.31         & -            & 61.49        & 82.26        & 89.23         & -            \\
+            Propot~\cite{yanPrototypicalPromptingTexttoimage2024}       & CLIP-ViT
+                                                                        & 74.89                                    & 89.90          & 94.17          & 67.12          & 65.12        & 81.57        & 86.97         & 42.93        & 61.87        & 83.63        & 89.70         & 47.82        \\
+            RDE~\cite{qinNoisyCorrespondenceLearningTexttoImage2024}    & CLIP-ViT
+                                                                        & 75.94                                    & 90.14          & 94.12          & 67.56          & 67.68        & 82.47        & 87.36         & 40.06        & 65.35        & 83.95        & 89.90         & 50.88        \\
+            HAM~\cite{jiangModelingThousandsHuman2025}                  & CLIP-ViT
+                                                                        & 77.99                                    & 91.34          & 95.03          & 69.72          & 69.95        & 83.88        & 88.39         & 42.72        & 72.50        & 87.70        & 91.95         & 55.47        \\
             \hline
-            \multicolumn{14}{l}{\small\textit{Methods with ViT backbone:}}                                                                                                                                                                                                             \\
+            \multicolumn{14}{l}{\small\textit{Methods with ViT backbone:}}                                                                                                                                                                                                                      \\
             \hline
-            CPCL~\cite{zhengCPCLCrossModalPrototypical2024}            & ViT
-                                                                       & 70.03                                   & 87.28          & 91.78          & 63.19          & 62.60        & 79.07        & 84.46         & 36.16        & 58.35        & 81.05        & 87.65         & 45.81        \\
-            PDReid~\cite{liPromptDecouplingTexttoImage2024}            & ViT
-                                                                       & 71.59                                   & 87.95          & 92.45          & 65.03          & 60.93        & 77.96        & 84.11         & 36.44        & 56.65        & 77.40        & 84.70         & 45.27        \\
-            SSAN~\cite{dingSemanticallySelfAlignedNetwork2021}         & ViT
-                                                                       & 61.37                                   & 80.15          & 86.73          & -              & 54.23        & 72.63        & 79.53         & -            & 43.50        & 67.80        & 77.15         & -            \\
-            CFine~\cite{yanCLIPDrivenFinegrainedTextImage2022}         & ViT
-                                                                       & 69.57                                   & 85.93          & 91.15          & -              & 60.83        & 76.55        & 82.42         & -            & 50.55        & 72.50        & 81.60         & -            \\
-            IVT~\cite{shuSeeFinerSeeMore2022}                          & ViT
-                                                                       & 65.59                                   & 83.11          & 89.21          & -              & 56.04        & 73.60        & 80.22         & -            & 46.70        & 70.00        & 78.80         & -            \\
+            CPCL~\cite{zhengCPCLCrossModalPrototypical2024}             & ViT
+                                                                        & 70.03                                    & 87.28          & 91.78          & 63.19          & 62.60        & 79.07        & 84.46         & 36.16        & 58.35        & 81.05        & 87.65         & 45.81        \\
+            PDReid~\cite{liPromptDecouplingTexttoImage2024}             & ViT
+                                                                        & 71.59                                    & 87.95          & 92.45          & 65.03          & 60.93        & 77.96        & 84.11         & 36.44        & 56.65        & 77.40        & 84.70         & 45.27        \\
+            SSAN~\cite{dingSemanticallySelfAlignedNetwork2021}          & ViT
+                                                                        & 61.37                                    & 80.15          & 86.73          & -              & 54.23        & 72.63        & 79.53         & -            & 43.50        & 67.80        & 77.15         & -            \\
+            CFine~\cite{yanCLIPDrivenFinegrainedTextImage2022}          & ViT
+                                                                        & 69.57                                    & 85.93          & 91.15          & -              & 60.83        & 76.55        & 82.42         & -            & 50.55        & 72.50        & 81.60         & -            \\
+            IVT~\cite{shuSeeFinerSeeMore2022}                           & ViT
+                                                                        & 65.59                                    & 83.11          & 89.21          & -              & 56.04        & 73.60        & 80.22         & -            & 46.70        & 70.00        & 78.80         & -            \\
             \thickhline
             \rowcolor{gray!20}
-            \textbf{Ours}                                              & ViT
-                                                                       & \textbf{79.93}                          & \textbf{92.95} & \textbf{96.47} & \textbf{72.61}
-                                                                       & \textbf{68.68}                          & \textbf{84.29} & \textbf{89.74} & \textbf{41.78}
-                                                                       & \textbf{74.33}                          & \textbf{88.85} & \textbf{92.95} & \textbf{57.68}                                                                                                                           \\
+            \textbf{Ours}                                               & ViT
+                                                                        & \textbf{79.93}                           & \textbf{92.95} & \textbf{96.47} & \textbf{72.61}
+                                                                        & \textbf{68.68}                           & \textbf{84.29} & \textbf{89.74} & \textbf{41.78}
+                                                                        & \textbf{74.33}                           & \textbf{88.85} & \textbf{92.95} & \textbf{57.68}                                                                                                                           \\
             \thickhline
         \end{tabular}
     }

@@ -12,37 +12,39 @@
 
 \subsection{Implementation Details}
 \label{sec:4.2}
-\noindent Our model employs pre-trained bert-base-uncased as the text encoder with hidden dimensionality of 768, and vit-base-patch16-224 as the visual encoder. All images are resized to $224 \times 224$ pixels. The BDAM module processes visual tokens through multi-layer self-attention and cross-attention, disentangling them into identity and clothing features of 768 dimensions each. A two-layer Mamba fusion module with input/output dimension 256, state dimension 16, and convolutional kernel size 4 integrates the multimodal representations. Dropout rate is set to 0.1 throughout. Training utilizes the Adam optimizer with learning rate $1 \times 10^{-4}$, weight decay $1 \times 10^{-3}$, and cosine annealing scheduling. The multi-task loss combines InfoNCE, triplet, clothing adversarial, HSIC decoupling, and gate regularization terms. We employ GradNorm for dynamic task weighting with $\alpha = 1.5$ and weight learning rate 0.025; task weights are normalized to sum to the number of tasks and clipped to $[10^{-4}, 10]$. Gradient norms are computed on the final shared layer, with an additional log-variance regularization coefficient of $1 \times 10^{-3}$.
+\noindent Our model employs the `bert-base-uncased` model, which is pre-trained, as the text encoder with a hidden dimensionality of 768. We use `vit-base-patch16-224` as the visual encoder. All images are resized to $224 \times 224$ pixels. The BDAM module processes visual tokens through multiple layers of self-attention and cross-attention, disentangling them into identity and clothing features of 768 dimensions each. A Mamba fusion module with two layers, configured with an input and output dimension of 256, a state dimension of 16, and a convolutional kernel size of 4, integrates the multimodal representations. The dropout rate is set to 0.1 throughout.
 
-For data augmentation, we extract style embeddings using clip-vit-base-patch32, cluster them via DBSCAN, and generate style-consistent identity and clothing descriptions through ChatGPT-4. All splits are enforced at the identity level to prevent data leakage. Each experiment is repeated with random seeds 0, 1, and 2; we select the best checkpoint based on validation performance and report the mean across three runs.
+\noindent Training utilizes the Adam optimizer with a learning rate of $1 \times 10^{-4}$, weight decay of $1 \times 10^{-3}$, and cosine annealing scheduling. The loss function for multiple tasks combines InfoNCE, triplet, clothing adversarial, HSIC decoupling, and gate regularization terms. We employ GradNorm for dynamic task weighting with $\alpha = 1.5$ and a weight learning rate of 0.025. Task weights are normalized to sum to the number of tasks and clipped to the range $[10^{-4}, 10]$. Gradient norms are computed on the final shared layer, with an additional regularization coefficient for log variance of $1 \times 10^{-3}$.
+
+\noindent For data augmentation, we extract style embeddings using `clip-vit-base-patch32`, cluster them via DBSCAN, and generate descriptions consistent with the style for identity and clothing through `ChatGPT-4`. All splits are enforced at the identity level to prevent data leakage. Each experiment is repeated with random seeds 0, 1, and 2; we select the best checkpoint based on validation performance and report the mean across the three runs.
 
 \subsection{Parameter Analysis}
 \label{sec:param_analysis}
-
 \noindent Although the identity and clothing branches in BDAM adopt identical architectures, they learn distinctly different representations through independent parameterization and asymmetric supervision.
-The BDAM gating mechanism generates dimension-wise weights $g_{\text{dis}} \in \mathbb{R}^{B \times D}$ via $g_{\text{dis}} = \sigma(W_g[\hat{f}_{id}; \hat{f}_{clo}] + b_g)$, yielding complementary coefficients $W_{id} = g_{\text{dis}}$ and $W_{clo} = 1-g_{\text{dis}}$ that satisfy the zero-sum constraint $W_{id} + W_{clo} = \mathbf{1}$.
+The BDAM gating mechanism generates weights at the dimension level $g_{\text{dis}} \in \mathbb{R}^{B \times D}$ via $g_{\text{dis}} = \sigma(W_g[\hat{f}_{id}; \hat{f}_{clo}] + b_g)$. This yields complementary coefficients $W_{id} = g_{\text{dis}}$ and $W_{clo} = 1-g_{\text{dis}}$ that satisfy the constraint $W_{id} + W_{clo} = \mathbf{1}$.
 This constraint introduces competitive pressure between branches, encouraging each to specialize in unique semantic patterns.
-The learning dynamics are governed by asymmetric loss signals: the identity branch receives supervision from InfoNCE and triplet losses, steering it toward person-invariant attributes such as body shape and posture, while the clothing branch is guided by matching and adversarial losses toward appearance-centric features.
-The HSIC-based decoupling loss enforces statistical independence by orthogonalizing the two feature subspaces in a Reproducing Kernel Hilbert Space, thereby preventing representational collapse.
-Similarly, the fusion module employs an adaptive gating mechanism to balance modality contributions.
+
+\noindent The learning dynamics are governed by asymmetric loss signals. The identity branch receives supervision from InfoNCE and triplet losses, steering it toward attributes that are invariant to the person, such as body shape and posture. In contrast, the clothing branch is guided by matching and adversarial losses toward features centered on appearance. The decoupling loss based on HSIC enforces statistical independence by orthogonalizing the two feature subspaces in a Reproducing Kernel Hilbert Space, thereby preventing representational collapse.
+
+\noindent Similarly, the fusion module employs an adaptive gating mechanism to balance modality contributions.
 The fusion gate $g_{\text{fus}} \in \mathbb{R}^{B \times 2}$ is computed as $g_{\text{fus}} = \text{Softmax}(W_f[f_{\text{img}}; f_{\text{txt}}])$, producing normalized modality weights $W_{\text{img}} = g_{\text{fus}}[:, 0]$ and $W_{\text{txt}} = g_{\text{fus}}[:, 1]$ satisfying $W_{\text{img}} + W_{\text{txt}} = 1$.
- This sample-level gating mechanism operates at the instance level, dynamically adjusting modality importance based on input characteristics, whereas the disentanglement gate provides dimension-level control within the visual stream.
+This mechanism operates at the instance level, dynamically adjusting modality importance based on input characteristics, whereas the disentanglement gate provides control at the dimension level within the visual stream.
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=\linewidth]{gate_weight_distribution.pdf}
     \caption{Learned gate weight distributions on the CUHK-PEDES test set.
-(a) BDAM assigns significantly higher weights to identity features than clothing features, validating the identity-centric design.
-(b) Fusion module maintains balanced modality contributions, confirming effective cross-modal integration without modality dominance.}
-\label{fig:gate_distribution}
+        (a) BDAM assigns significantly higher weights to identity features than clothing features, validating the identity-centric design.
+        (b) Fusion module maintains balanced modality contributions, confirming effective cross-modal integration without modality dominance.}
+    \label{fig:gate_distribution}
 \end{figure}
-
-To empirically validate these mechanisms, we analyze the distributions of learned gate weights across the test set, as shown in \cref{fig:gate_distribution}.
-The BDAM identity weights exhibit a right-skewed distribution with mean 0.61 and standard deviation 0.17, substantially exceeding the clothing weights which concentrate around 0.38.
-This asymmetry confirms that identity-relevant features dominate the final representation, aligning with our design objective.
+\noindent To empirically validate these mechanisms, we analyze the distributions of learned gate weights across the test set, as shown in \cref{fig:gate_distribution}.
+The BDAM identity weights exhibit a distribution skewed to the right, with a mean of 0.61 and standard deviation of 0.17, substantially exceeding the clothing weights which concentrate around 0.38.
+This asymmetry confirms that features relevant to identity dominate the final representation, aligning with our design centered on identity.
 The bimodal separation pattern indicates the gate has learned to discriminate between samples with strong identity cues versus those requiring additional contextual information.
-In contrast, the fusion module maintains near-equal modality contributions with means of 0.52 for image and 0.48 for text, both with moderate variance around 0.10.
-This balanced distribution, centered near the uniform baseline of 0.5, demonstrates stable cross-modal alignment without collapse toward either modality.
-These empirical observations corroborate our theoretical design: BDAM enforces semantic disentanglement through asymmetric supervision and HSIC regularization, while the fusion gate achieves dynamic equilibrium via Softmax normalization and balanced loss weighting.
+In contrast, the fusion module maintains nearly equal modality contributions, with means of 0.52 for image and 0.48 for text, both with moderate variance around 0.10.
+This balanced distribution, centered near the uniform baseline of 0.5, demonstrates stable alignment between modalities without collapse toward either one.
+
+\noindent These empirical observations corroborate our theoretical design: BDAM enforces semantic disentanglement through asymmetric supervision and regularization via HSIC, while the fusion gate achieves dynamic equilibrium via Softmax normalization and balanced loss weighting.
 
 \subsection{Ablation Study}
 \noindent We conduct systematic ablation studies to validate the contribution of each architectural component and loss term. All experiments are performed on CUHK-PEDES unless otherwise specified.
@@ -68,18 +70,21 @@ These empirical observations corroborate our theoretical design: BDAM enforces s
     \vspace{-0.2cm}
 \end{table}
 
-\noindent \textbf{Disentanglement Module.} As shown in \cref{tab:ablation_bdam}, incorporating BDAM yields substantial improvements over the baseline across all metrics, demonstrating the effectiveness of explicit identity-clothing disentanglement. Within the BDAM architecture, both bidirectional cross-attention and the gating mechanism prove essential: removing cross-attention results in significant performance degradation, confirming its role in enabling semantic interaction between branches; ablating the gate mechanism similarly impairs retrieval accuracy. Furthermore, reducing the network depth to three layers degrades performance, indicating that deeper semantic modeling is necessary to achieve robust disentanglement. The learned gate weight distributions in \cref{fig:gate_distribution} provide additional evidence, showing that the gating mechanism automatically achieves semantic specialization in BDAM and modality balance in fusion through end-to-end training.
+\noindent \textbf{Disentanglement Module.} As shown in \cref{tab:ablation_bdam}, incorporating BDAM yields substantial improvements over the baseline, demonstrating the effectiveness of explicit disentanglement between identity and clothing.
+The subsequent analysis of its components confirms the necessity of each design choice. Removing the bidirectional cross attention, ablating the gating mechanism, or reducing the network depth to three layers all result in significant performance degradation. This indicates that the semantic interaction between branches, the adaptive feature control, and sufficient model depth are all essential for achieving robust disentanglement.
+The learned gate weight distributions in \cref{fig:gate_distribution} provide additional evidence, showing that the gating mechanism automatically achieves semantic specialization in BDAM and modality balance in fusion through end to end training.
 
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=\linewidth]{disentanglement_tsne_academic.pdf}
-    \caption{t-SNE visualization comparing feature distributions.
-        (a) The baseline model's 'Entangled Features' show poor separation, with clusters for different identities (e.g., ID 1090 and ID 1099 positioned very closely.
-        (b) With BDAM and HSIC regularization, the 'Disentangled Features'  show a clear separation: 'Clothing' features (marked by 'x')  occupy an independent region on the left, while identity features (dots)  form a distinct cluster on the right.}
+    \caption{Visualization of feature distributions using t-SNE. (a) The baseline model exhibits highly entangled features with poor identity separation. (b) Our method (BDAM with HSIC) yields a highly organized space, clearly decoupling identity (dots) from clothing (crosses) features.}
     \label{fig:demo}
 \end{figure}
 
-To qualitatively assess disentanglement quality, we visualize learned features using t-SNE dimensionality reduction in \cref{fig:demo}. (a) The baseline model produces a highly mixed embedding space with extensive identity overlap, indicating severe entanglement between identity and appearance attributes. (b) In contrast, incorporating BDAM with HSIC regularization yields a well-structured feature space wherein identity embeddings form tight, well-separated clusters on the right, while clothing features occupy an independent region on the left. Within the identity cluster, same-person samples exhibit strong intra-class cohesion with clear inter-class boundaries. This geometric structure confirms the orthogonality enforced by our disentanglement mechanism and provides visual evidence for the quantitative performance gains observed in \cref{tab:ablation_bdam}.
+\noindent To provide a qualitative assessment of disentanglement quality, we visualize the learned feature space using dimensionality reduction via t-SNE in \cref{fig:demo}.
+The visualization reveals a stark contrast. The baseline model (a) produces a highly mixed embedding space where identities overlap, indicating severe entanglement between identity and appearance attributes.
+(b) Conversely, our method, incorporating BDAM with HSIC regularization, yields a highly organized feature space. The identity embeddings form tight clusters, exhibiting strong cohesion for samples of the same person and clear separation between different identities. Concurrently, clothing features are projected to an independent region.
+This geometric structure confirms the orthogonality enforced by our disentanglement mechanism and provides visual evidence for the quantitative performance gains observed in \cref{tab:ablation_bdam}.
 
 \begin{table}[htbp]
     \centering
@@ -102,7 +107,9 @@ To qualitatively assess disentanglement quality, we visualize learned features u
     \vspace{-0.2cm}
 \end{table}
 
-\noindent \textbf{Fusion Module.} \cref{tab:ablation_fusion} demonstrates that the complete Mamba-based fusion module substantially outperforms the baseline. Among the three components, removing the Mamba SSM backbone incurs the largest performance drop, highlighting its critical role in modeling long-range dependencies across modalities. Ablating either the gating mechanism or modality alignment layers results in more modest degradation, suggesting these components provide complementary benefits by enabling adaptive weighting and distributional alignment, respectively.
+\noindent \textbf{Fusion Module.} The analysis in \cref{tab:ablation_fusion} confirms that the effectiveness of our complete fusion module, which substantially outperforms the baseline, stems from the synergy of its three components.
+The Mamba SSM backbone is identified as the most critical element; its removal incurs the largest performance drop, highlighting the importance of modeling dependencies over long ranges across modalities.
+Furthermore, the gating mechanism and modality alignment layers provide essential complementary benefits. Ablating either component results in a clear degradation, confirming their respective roles in enabling adaptive weighting and achieving distributional alignment.
 
 \begin{table}[htbp]
     \centering
@@ -127,7 +134,10 @@ To qualitatively assess disentanglement quality, we visualize learned features u
     \vspace{-0.2cm}
 \end{table}
 
-\noindent \textbf{Loss Functions.} To validate the necessity of each loss component, we systematically remove individual terms while keeping all other settings fixed. \cref{tab:ablation_loss} reveals that every loss term contributes positively to final performance. The InfoNCE and triplet losses emerge as foundational: removing InfoNCE causes catastrophic performance collapse, underscoring the critical importance of cross-modal contrastive alignment; ablating the triplet loss also significantly degrades retrieval accuracy, confirming the necessity of strong intra-modal identity discrimination. The disentanglement-specific losses—adversarial and HSIC decoupling—are likewise essential; removing either term impairs performance, demonstrating that architectural design alone is insufficient and explicit loss-based constraints are required to enforce identity-clothing separation. Finally, removing gate regularization causes minor but consistent degradation, validating its auxiliary role in stabilizing the learned gating mechanisms.
+\noindent \textbf{Loss Functions.} To validate the necessity of each loss component, we systematically remove individual terms while keeping all other settings fixed. As shown in \cref{tab:ablation_loss}, every loss term contributes positively to the final performance.
+The InfoNCE and triplet losses emerge as foundational. Removing InfoNCE causes a catastrophic performance collapse, underscoring the critical importance of contrastive alignment between modalities. Ablating the triplet loss also significantly degrades retrieval accuracy, confirming the necessity of strong identity discrimination within a modality.
+The losses specific to disentanglement, namely the adversarial and HSIC decoupling losses, are likewise essential. The performance degradation upon removing either term demonstrates that architectural design alone is insufficient; explicit constraints imposed by the loss function are required to enforce the separation of identity and clothing.
+Finally, the minor but consistent degradation from removing gate regularization validates its auxiliary role in stabilizing the learned gating mechanisms.
 
 \begin{table}[htbp]
     \centering
@@ -153,20 +163,25 @@ To qualitatively assess disentanglement quality, we visualize learned features u
     \vspace{-0.2cm}
 \end{table}
 
-\noindent \textbf{Style Prompt Generation.} We compare various clustering algorithms for generating style-consistent prompts, as detailed in \cref{tab:ablation_style_prompts}. While random sampling provides minimal gains over the baseline, demonstrating the importance of structured prompt design, centroid-based methods such as K-Means and Gaussian Mixture Models offer modest improvements but require manual specification of cluster counts and struggle with irregular density distributions. Hierarchical agglomerative clustering exhibits similar limitations. In contrast, density-based approaches—particularly DBSCAN—achieve superior performance by automatically discovering arbitrarily-shaped clusters while identifying and filtering noise. DBSCAN's ability to adaptively determine the number of style categories without hyperparameter tuning makes it the optimal choice for this task.
+\noindent \textbf{Style Prompt Generation.} We compare various clustering algorithms for generating prompts consistent with style, as detailed in \cref{tab:ablation_style_prompts}.
+While random sampling provides minimal gains over the baseline, demonstrating the importance of a structured prompt design, traditional methods such as K-Means, Gaussian Mixture Models, and Hierarchical Agglomerative clustering offer only modest improvements.
+These methods are constrained by limitations such as the manual specification of cluster counts and difficulty handling irregular density distributions.
+In contrast, approaches based on density, particularly DBSCAN, achieve superior performance. This is because DBSCAN automatically discovers clusters of arbitrary shape while identifying and filtering noise.
+DBSCAN's ability to adaptively determine the number of style categories without requiring hyperparameter tuning makes it the optimal choice for this task.
 
 \subsection{Efficiency Analysis}
 
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=\columnwidth]{Figure6.pdf}
-    \caption{Efficiency-performance comparison on CUHK-PEDES. All metrics normalized to [0, 100] where higher is better (cost metrics inverted: lower resource usage → higher score). Our Mamba-based fusion achieves competitive accuracy with minimal computational overhead.}
+    \caption{Comparison of efficiency and performance on CUHK-PEDES. All metrics are normalized to [0, 100], where higher is better. Cost metrics (Params, FLOPs, Memory) are inverted, meaning lower resource usage yields a higher score. Our fusion module employing Mamba achieves competitive accuracy with reduced computational overhead.}
     \label{fig:efficiency_comparison}
 \end{figure}
 
-\noindent As shown in \cref{fig:efficiency_comparison}, our Mamba-based fusion module achieves an optimal balance in the accuracy-efficiency trade-off space. All metrics are normalized such that higher scores consistently indicate superior performance—for cost-related metrics (Params, FLOPs, Memory), lower resource consumption translates to higher normalized scores, while performance metrics (mAP, Speed) are directly normalized.
-
-\noindent The visualization reveals that Mamba maintains near-peak performance across all dimensions. Compared to Transformer-4Layer, our method delivers competitive retrieval accuracy (reflected in comparable mAP scores) while achieving substantially higher efficiency scores in Params, FLOPs, and Memory—confirming lower computational overhead. Against the Simple baseline, Mamba demonstrates marked mAP improvements while maintaining comparable efficiency scores, validating superior resource utilization.
+\noindent As shown in \cref{fig:efficiency_comparison}, our fusion module employing Mamba achieves an optimal balance in the trade-off between accuracy and efficiency.
+The visualization reveals that Mamba maintains performance near the peak across all dimensions.
+Compared to the four-layer Transformer baseline, our method delivers competitive retrieval accuracy (reflected in comparable mAP scores) while achieving substantially higher efficiency scores in Params, FLOPs, and Memory, which confirms lower computational overhead.
+Against the Simple baseline, Mamba demonstrates marked mAP improvements while maintaining comparable efficiency scores, validating superior resource utilization.
 
 \subsection{Comparisons with State-of-the-Art Methods}
 \begin{table*}[!t]
@@ -224,4 +239,6 @@ To qualitatively assess disentanglement quality, we visualize learned features u
     \vspace{-0.2cm}
 \end{table*}
 
-\noindent We compare our method against recent state-of-the-art approaches across three widely-adopted benchmarks, as summarized in \cref{tab:sota_comparison}. On CUHK-PEDES, our method establishes new state-of-the-art results, substantially surpassing both traditional ViT-based methods and the recent CLIP-based HAM baseline. Notably, this performance is achieved without leveraging large-scale pre-trained vision-language models, demonstrating that our identity-clothing disentanglement architecture and efficient fusion strategy provide effective cross-modal alignment through task-specific design. On ICFG-PEDES, our approach remains competitive with HAM while significantly outperforming other recent methods, further validating the robustness of decoupled modeling under clothing variation. On RSTPReid, we achieve the best reported results to date, surpassing all ViT-based methods and establishing clear improvements over HAM. These consistent gains across diverse datasets—varying in scale, camera setup, and annotation density—underscore the generalization capability of our disentanglement and fusion mechanisms in complex, multi-camera, cross-scene scenarios. In summary, our method delivers superior or highly competitive performance across all three benchmarks, validating the effectiveness of the Bidirectional Decoupling Alignment Module, Mamba-based fusion, and dynamic multi-task optimization for text-to-image person re-identification.
+\noindent We compare our method against recent state-of-the-art approaches across three benchmarks, as summarized in \cref{tab:sota_comparison}. On CUHK-PEDES, our method establishes new state-of-the-art results, substantially surpassing both ViT-based methods and the recent CLIP-based HAM baseline. On ICFG-PEDES, our approach remains competitive with HAM while significantly outperforming other methods. On RSTPReid, we achieve the best reported results to date, surpassing all ViT-based methods and establishing clear improvements over HAM.
+
+\noindent These consistent gains across diverse datasets underscore the generalization capability of our approach. Notably, this high performance is achieved without leveraging large-scale pre-trained vision-language models, demonstrating that our identity-clothing disentanglement architecture and efficient fusion strategy provide effective cross-modal alignment through task-specific design. In summary, our method delivers superior or highly competitive performance across all three benchmarks, validating the effectiveness of our proposed components for text-to-image person re-identification.

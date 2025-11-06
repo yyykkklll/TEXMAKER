@@ -1,5 +1,6 @@
 \section{Method}
 \label{sec:method}
+
 \begin{figure*}[ht]
     \centering
     \includegraphics[width=\textwidth]{figure2_2.pdf}
@@ -12,47 +13,49 @@
 \end{figure*}
 
 \subsection{Overview}
-\noindent To learn pedestrian representations robust to variations in clothing, pose, and environment, this paper proposes the BDAM.
-This module disentangles and extracts robust features via contrastive and supervised learning between the input image and encoded textual features.
-As illustrated in \cref{fig:figure2}, BDAM improves T2I-ReID retrieval performance by effectively separating identity from clothing features, thereby enabling superior cross-modal fusion.
-The core objective is to learn an identity representation invariant to clothing changes.
-To achieve this, our model comprises four key components: (1) a Visual Feature Extraction Module, (2) a Textual Feature Extraction Module, (3) the BDAM, and (4) a Mamba SSM Fusion Module.
-Specifically, given a pedestrian image $I \in \mathbb{R}^{B \times C \times H \times W}$, a visual encoder first extracts image features $f_i$.
-To obtain semantic guidance, we use an MLLM with pre-designed prompts to generate corresponding identity-relevant and identity-irrelevant textual descriptions.
+\noindent To learn pedestrian representations robust to variations in clothing, pose, and environment, this paper proposes the BDAM. 
+This module disentangles and extracts robust features via contrastive and supervised learning, guided by encoded textual features.
+As illustrated in \cref{fig:figure2}, our framework comprises two primary feature extraction modules for vision and text, our core BDAM, and an efficient Mamba SSM Fusion Module.
+
+\noindent Specifically, given a pedestrian image $I \in \mathbb{R}^{B \times C \times H \times W}$, a visual encoder first extracts image features $f_i$.
+To obtain semantic guidance, we use an MLLM with pre-designed prompts to generate corresponding descriptions for identity and clothing.
 A text encoder subsequently encodes these into $f^t_{id}$ and $f^t_{clo}$.
-During disentanglement, BDAM leverages these textual features to guide image feature learning.
-To ensure the quality of this process, we introduce an HSIC loss to constrain the two resulting feature types towards orthogonality.
-We also employ an adversarial clothing loss, denoted as $\mathcal{L}_{\text{adv}}$, to actively suppress clothing-related features and ensure they do not interfere with identity recognition.
-Finally, to achieve deep fusion of visual identity and textual semantics, we introduce the Mamba SSM as a fusion module.
-It dynamically models and facilitates interaction among the disentangled multi-modal features, enhancing the model's overall representation capability.
+During disentanglement, BDAM leverages these textual features to guide the image feature learning process.
+To ensure the quality of this separation, we introduce a loss based on HSIC to constrain the two resulting feature types towards orthogonality.
+We also employ an adversarial clothing loss, denoted as $\mathcal{L}_{\text{adv}}$, to actively suppress features related to clothing and ensure they do not interfere with identity recognition.
+Finally, to achieve a deep fusion of visual identity and textual semantics, we introduce the Mamba SSM as a fusion module.
+It dynamically models and facilitates interaction among the disentangled multimodal features, enhancing the model's overall representation capability.
 
 \subsection{Bidirectional Decoupled Alignment Module}
-\noindent Some studies directly adopt CLIP~\cite{radfordLearningTransferableVisual2021} as a dual-modality feature extractor and align global embeddings for retrieval or discrimination.
-However, this approach presents two key limitations. First, its limited fine-grained semantics hinder the separation of identity from clothing. Second, its holistic image-text encoding lacks token-level cross-modal structure modeling, which reduces robustness in complex scenes.
-In this paper, we use a pre-trained ViT (ViT-B/16) as the visual encoder $E_v$~\cite{dosovitskiyImageWorth16x162021}.
-Given an image $I_i$, $E_v$ outputs token features $f_i \in \mathbb{R}^{B \times L \times D}$ that entangle identity-relevant and identity-irrelevant cues.
-A dual-branch linear projection yields preliminary identity features $f_{\text{id}}' \in \mathbb{R}^{B \times L \times D}$, and clothing features $f_{\text{clo}}' \in \mathbb{R}^{B \times L \times D}$, followed by multi-layer self-attention in each branch to enhance local consistency and contextual awareness.
-Instead of using the ViT [CLS] token as a global descriptor, we exploit the full patch sequence and introduce cross-branch cross-attention to exchange information.
+\noindent Some studies directly adopt CLIP~\cite{radfordLearningTransferableVisual2021} as a feature extractor for both modalities, aligning global embeddings for retrieval or discrimination.
+However, this approach presents two key limitations. First, its limited capacity for fine-grained semantics hinders the separation of identity from clothing. Second, its holistic encoding of images and text lacks the modeling of cross-modal structure at the token level, which reduces robustness in complex scenes.
+
+\noindent In this paper, we use a pre-trained ViT (ViT-B/16) as the visual encoder $E_v$~\cite{dosovitskiyImageWorth16x162021}.
+Given an image $I_i$, $E_v$ outputs token features $f_i \in \mathbb{R}^{B \times L \times D}$ that entangle cues relevant to identity and cues irrelevant to identity.
+A linear projection with two branches then yields preliminary identity features $f_{\text{id}}' \in \mathbb{R}^{B \times L \times D}$ and clothing features $f_{\text{clo}}' \in \mathbb{R}^{B \times L \times D}$.
+These are followed by multi-layer self-attention in each branch to enhance local consistency and contextual awareness.
+
+\noindent Instead of using the ViT [CLS] token as a global descriptor, we exploit the full patch sequence and introduce cross-attention between the branches to exchange information.
 In the identity branch, the clothing branch provides auxiliary context, and vice versa, reinforcing semantic distinctions.
 Each branch then applies global average pooling to produce $\hat{f}{id}$ and $\hat{f}{clo}$.
-To enable soft, input-adaptive disentanglement, we design a gating mechanism.
+To enable soft disentanglement that is adaptive to the input, we design a gating mechanism.
 The two global vectors are concatenated and fed to a lightweight linear network with a Sigmoid output, producing a gate $g \in \mathbb{R}^{B \times D}$.
 We obtain gated features $f_{id}^{gate} = g \odot \hat{f}_{id}$ and $f_{clo}^{gate} = (1-g) \odot \hat{f}_{clo}$, where $\odot$ denotes element-wise multiplication.
-This dimension-wise weighting provides fine-grained control; $f_{id}^{gate}$ is further sent to the fusion module.
-To train BDAM and enforce separation, we introduce a clothing adversarial loss and an HSIC-based identity–clothing decoupling loss.
+This weighting at the dimension level provides a fine degree of control; $f_{id}^{gate}$ is further sent to the fusion module.
+
+\noindent To train BDAM and enforce separation, we introduce two specialized loss functions. The first is a clothing adversarial loss, and the second is a decoupling loss based on HSIC to enforce independence between identity and clothing.
 The clothing adversarial loss suppresses correlations between visual clothing features and clothing text, enhancing the purity of identity features:
 \begin{equation} \label{eq:adv} \mathcal{L}_{\text{adv}} = \mathbb{E}_i \left[ -\log(1 - P_{\text{pos}}(i)) \right] \end{equation}
-where $P_{\text{pos}}(i)$ is the temperature-scaled dot-product similarity between $\hat{f}_{\text{clo}}$ and $f_{\text{clo}}^t$.
-In practice, clothing features are linearly projected to the text dimension and L2-normalized for stable similarity estimation.
-This adversarial objective explicitly downweights clothing, while cross-attention implicitly sharpens identity/clothing separation via interaction.
-By minimizing the matching probability between the visual clothing features and the text, $\mathcal{L}_{\text{adv}}$ encourages the model to weaken the distracting effect of clothing features on identity recognition.
-This adversarial mechanism and the cross-attention mechanism are complementary. The former explicitly reduces the weight of clothing information by optimizing an objective function, while the latter strengthens the semantic differences between identity and clothing features through interactive modeling.
-To further encourage statistical independence, we minimize an HSIC-based decoupling loss:
+where $P_{\text{pos}}(i)$ is the dot-product similarity, scaled by temperature, between $\hat{f}_{\text{clo}}$ and $f_{\text{clo}}^t$.
+In practice, clothing features are linearly projected to the text dimension and normalized using L2 for stable similarity estimation.
+This adversarial objective explicitly downweights clothing, while the cross-attention mechanism described earlier implicitly sharpens the separation via interaction.
+
+\noindent To further encourage statistical independence, we minimize a decoupling loss based on HSIC:
 \begin{equation}
     \label{eq:decouple}
     \begin{split}
         \mathcal{L}_{\text{Decouple}} & = \text{HSIC}(f_{\text{id}}^{\text{gate}}, f_{\text{clo}}^{\text{gate}}) \\
-                                      & = \frac{1}{(N-1)^2} \mathrm{tr}(K_{\text{id}} H K_{\text{clo}} H)
+                                    & = \frac{1}{(N-1)^2} \mathrm{tr}(K_{\text{id}} H K_{\text{clo}} H)
     \end{split}
 \end{equation}
 Here, $f_{\text{id}}^{\text{gate}} \in \mathbb{R}^{B \times D}$ and $f_{\text{clo}}^{\text{gate}} \in \mathbb{R}^{B \times D}$ are the gated identity and clothing features, respectively.
@@ -62,29 +65,34 @@ HSIC measures the statistical dependence between features by calculating the mea
 By minimizing this value, the loss encourages the features to be statistically independent.
 
 \subsection{Semantic enhancement}
-\noindent We employ an MLLM(specifically, ChatGPT-4 as detailed in ~\ref{sec:4.2}) to automatically generate fine-grained identity and clothing descriptions for pedestrians, reducing manual annotation and enriching supervision.
-Prior work, notably HAM~\cite{jiangModelingThousandsHuman2025}, shows that modeling annotator styles can steer an MLLM to produce diverse texts.
-Building on our reproduction of HAM, we adapt and extend the pipeline to meet our model's design goals.
+\noindent We employ an MLLM, as detailed in Section~\ref{sec:4.2}, to automatically generate fine-grained identity and clothing descriptions for pedestrians. This approach reduces the burden of manual annotation and enriches the available supervision. Prior work, notably HAM~\cite{jiangModelingThousandsHuman2025}, shows that modeling annotator styles can steer an MLLM to produce diverse texts. Adapting this core insight, we extend the pipeline to meet our model's design goals.
 
-We use the CLIP text encoder (ViT-L/14) to embed the original descriptions into fixed-dimensional vectors.With prompts, an MLLM generalizes and substitutes entity attributes to emphasize expression style rather than content.
-We then cluster these style embeddings with DBSCAN~\cite{hanafiFastDBSCANAlgorithm2022}, which adaptively discovers dense regions without predefining the cluster count.To stabilize clusters, we reassign noise points and merge small clusters.
-This setup aligns the learned style categories with the identity/clothing disentanglement expected by BDAM.
+\noindent We first use the CLIP text encoder to embed the original descriptions into vectors of a fixed dimension. Using prompts, an MLLM generalizes and substitutes entity attributes to emphasize expression style rather than content. We then cluster these style embeddings with DBSCAN~\cite{hanafiFastDBSCANAlgorithm2022}, which adaptively discovers dense regions without predefining the cluster count. To stabilize the clusters, we reassign noise points and merge small clusters. This setup aligns the learned style categories with the identity and clothing disentanglement expected by BDAM.
 
-A dual-prompt generator guides the MLLM to output two texts per image: an identity description (biological traits such as race, gender, age, body type) and a clothing description (apparel type, color, pattern, material, accessories).
-We control generation with length and temperature and apply syntax checks plus attribute-coverage validation so that outputs remain grammatical, structured, and parsable.
-Summary. Our adaptations deliver flexible style modeling via DBSCAN and a decoupled dual-description mechanism that strengthens the distinctiveness and diversity of identity and clothing semantics.
-The resulting supervision improves data expressiveness and provides richer training signals for BDAM.
+\noindent A dual prompt generator guides the MLLM to output two distinct texts per image: one description for identity, covering biological traits, and another for clothing, detailing apparel, colors, and patterns. We control the generation process with length and temperature constraints. We also apply syntax checks and validation for attribute coverage to ensure the outputs remain grammatical, structured, and parsable.
+
+\noindent In summary, our adaptations deliver flexible style modeling via DBSCAN and a decoupled dual description mechanism. This process strengthens the distinctiveness and diversity of identity and clothing semantics. The resulting supervision improves data expressiveness and provides richer training signals for BDAM.
 
 \subsection{Feature Fusion}
-\noindent For efficient and semantically-sensitive cross-modal feature fusion, we introduce the Mamba SSM.The core objective is to preserve the semantic integrity of the purified image and text identity features, enabling a fine-grained fusion that is robust to the clothing variations previously isolated by the BDAM.The module first aligns features from both modalities, then applies a pre-fusion gating mechanism to dynamically adjust their weights, and finally employs a multi-layer Mamba SSM for deep semantic interaction to generate the final fused representation.Initially, to mitigate distributional discrepancies between modalities, MLP performs dimensional alignment.It processes the decoupled visual features, $f_{\text{id}}^{\text{gate}}$, and the textual features, $f_{\text{id}}^{t}$, to generate aligned features, $f_{\text{img}}$ and $f_{\text{txt}}$.Notably, the decoupled visual clothing feature, $f_{\text{clo}}^{\text{gate}}$, is \textit{intentionally discarded} during fusion.This design is central to our goal: the BDAM, supervised by $\mathcal{L}_{\text{adv}}$ and $\mathcal{L}_{\text{Decouple}}$, is tasked with purging identity-irrelevant information into $f_{\text{clo}}^{\text{gate}}$.By excluding this feature from the final fusion, the model is forced to learn a representation based purely on stable identity semantics, thereby achieving robustness against clothing changes.Following this, a gating mechanism achieves dynamic weighted fusion. It outputs a weight vector $w \in \mathbb{R}^{B \times 2}$, which is normalized via a SoftMax layer to produce image $w_{1}$ and text $w_{2}$, satisfying $w_{1} + w_{2} = 1$.The resulting fusion is computed as: $f_{\text{fusion}} = w_{1} \cdot f_{\text{img}} + w_{2} \cdot f_{\text{txt}}$.This allows the model to adaptively balance modal contributions based on context.This fusion gate is distinct from the one in the disentanglement module.It outputs a global, two-dimensional weight vector $w \in \mathbb{R}^{B \times 2}$, for the modalities, whereas the disentanglement gate provides a dimension-wise weight vector $g \in \mathbb{R}^{B \times D}$ for fine-grained feature control.The fused features, $f_{fusion}$, are then processed by the Mamba SSM to enhance inter-modal interaction.Leveraging its long-range dependency modeling capabilities, Mamba effectively captures complex sequential relationships between the modalities.We employ a stack of Mamba layers, where each layer updates its input $f_{fusion}^{(l)}$ using a residual connection: $f_{fusion}^{(l+1)} = \text{Mamba}(f_{fusion}^{(l)}) + f_{fusion}^{(l)}$.This structure mitigates the vanishing gradient problem and improves information flow.Finally, the output from the last Mamba layer is projected to produce the final representation, $f_{final} \in \mathbb{R}^{B \times D_{out}}$.The resulting feature is highly adaptive in its modal weighting and benefits from Mamba's long-range semantic modeling,providing robust support for downstream tasks like person re-identification.
+\noindent For efficient feature fusion that is sensitive to semantics, we introduce the Mamba SSM. The core objective is to preserve the semantic integrity of the purified identity features from both image and text, enabling a fusion that is robust to clothing variations previously isolated by the BDAM. The process begins with an MLP performing dimensional alignment to mitigate distributional discrepancies between modalities. It processes the decoupled visual features $f_{\text{id}}^{\text{gate}}$ and the textual features $f_{\text{id}}^{t}$ to generate aligned features, $f_{\text{img}}$ and $f_{\text{txt}}$. Notably, the decoupled visual clothing feature $f_{\text{clo}}^{\text{gate}}$ is \textit{intentionally discarded} during fusion. This design is central to our goal: the BDAM, supervised by $\mathcal{L}_{\text{adv}}$ and $\mathcal{L}_{\text{Decouple}}$, is tasked with purging information irrelevant to identity into $f_{\text{clo}}^{\text{gate}}$. By excluding this feature from the final fusion, the model is forced to learn a representation based purely on stable identity semantics.
+
+\noindent Following this alignment, a gating mechanism achieves dynamic weighted fusion. It outputs a weight vector $w \in \mathbb{R}^{B \times 2}$, which is normalized via a SoftMax layer to produce image $w_{1}$ and text $w_{2}$ weights, satisfying $w_{1} + w_{2} = 1$. The resulting fusion is computed as: $f_{\text{fusion}} = w_{1} \cdot f_{\text{img}} + w_{2} \cdot f_{\text{txt}}$. This mechanism allows the model to adaptively balance modal contributions based on context. This fusion gate is distinct from the one in the disentanglement module; it outputs a global, two-dimensional weight vector $w \in \mathbb{R}^{B \times 2}$ for the modalities, whereas the disentanglement gate provides a vector $g \in \mathbb{R}^{B \times D}$ for feature control at the dimension level.
+
+\noindent The resulting $f_{\text{fusion}}$ features are then processed by the Mamba SSM to enhance interaction between modalities. Leveraging its capability to model dependencies over long ranges, Mamba effectively captures complex sequential relationships. We employ a stack of Mamba layers, where each layer updates its input $f_{fusion}^{(l)}$ using a residual connection: $f_{fusion}^{(l+1)} = \text{Mamba}(f_{fusion}^{(l)}) + f_{fusion}^{(l)}$. This structure mitigates the vanishing gradient problem and improves information flow. Finally, the output from the last Mamba layer is projected to produce the final representation, $f_{final} \in \mathbb{R}^{B \times D_{out}}$. The resulting feature is highly adaptive in its modal weighting and benefits from Mamba's semantic modeling, providing robust support for downstream tasks like person re-identification.
 
 \subsection{Loss Function}
-\noindent To achieve fine-grained cross-modal alignment, we adopt the InfoNCE loss, which maximizes similarity for positive image–text pairs (same identity) while separating negatives.It is defined as:
+\noindent To achieve alignment between modalities at a fine-grained level, we adopt the InfoNCE loss. This loss maximizes similarity for positive image and text pairs (representing the same identity) while separating negatives. It is defined as:
 \begin{equation} \label{eq:info} \mathcal{L}{_\text{info}} = -\log \frac{\exp(\mathbf{v}^\top \mathbf{t}i / \tau)}{\sum_j \exp(\mathbf{v}^\top \mathbf{t}j / \tau)} \end{equation}
-Here, $v_i$ is the L2-normalized image identity feature from the visual encoder, $t_i$ is the text feature for the $i$-th identity, and $\tau$ controls distribution sharpness.In-batch negatives reduce the cross-modal semantic gap and promote alignment in a shared space.To enhance intra-modal identity discrimination, we include a triplet loss that enforces intra-class compactness and inter-class separation:
+Here, $v_i$ is the image identity feature from the visual encoder, normalized using the L2 norm; $t_i$ is the text feature for the $i$-th identity; and $\tau$ controls distribution sharpness. Negatives within the batch help reduce the semantic gap between modalities and promote alignment in a shared space.
+
+\noindent To enhance identity discrimination within a single modality, we include a triplet loss. This loss enforces compactness within classes and separation between classes:
 \begin{equation} \label{eq:triplet} \mathcal{L}{_\text{triplet}} = \mathbb{E}{(a,p,n)} \left[ \max\left( | f_a - f_p |2^2 - | f_a - f_n |2^2 + m, 0 \right) \right] \end{equation}
-Here, $(a, p, n)$ represent the identity features of the anchor, positive, and negative samples, respectively;$||\cdot||_2$ denotes the L2 norm; and $m$ is the margin parameter used to enforce a minimum distance gap between positive and negative pairs.In multi-task training, differing loss scales can cause one task to dominate.We adopt GradNorm to balance training by dynamically adjusting each task's gradient norm:
-\begin{equation} \label{eq:gradnorm} \mathcal{L}{_\text{GradNorm}} = \sum_k |    \nabla{\theta} (w_k \mathcal{L}_k) - \tilde{r}k G{\text{ref}} | \end{equation}
-Here, $\nabla{\theta} (w_k \mathcal{L}k)$ represents the gradient of the weighted loss of the $k$-th task, $w_k \mathcal{L}_k$, with respect to the shared parameters $\theta$;$||\cdot||_1$ denotes the L1 norm, which emphasizes a linear penalty on the deviation;$\tilde{r}_k = (\mathcal{L}_k / \mathcal{L}_k^0) / \bar{r}$ is the normalized loss ratio, where $\mathcal{L}_k^0$ is the initial loss of task $k$ at the beginning of training (used as a baseline), and $\bar{r}$ is the average of the loss ratios over all tasks.$G{ref}$ is a reference gradient norm, typically set to the gradient norm of the first task, $||\nabla{\theta}(w_1\mathcal{L}1)||$, as a baseline.This mechanism enforces a gradient balance among tasks during training by minimizing the L1 deviation between the actual gradient norm and a target value, $\tilde{r}_k G_{ref}$.Furthermore, to prevent instability caused by the abnormal scaling of task weights $w_k$, we add a regularization term, $\lambda \sum_k (\log w_k)^2$, to the total loss.This term effectively suppresses large discrepancies among the task weights by penalizing the square of their logarithms, thereby improving the stability of the training process.Finally, the overall loss function is defined as follows:
-\begin{equation}    \label{eq:total}    \mathcal{L}{_\text{Total}} = \sum_k w_k \mathcal{L}_k + \alpha \mathcal{L}{_\text{GradNorm}} + \lambda \sum_k (\log w_k)^2\end{equation}
-Here, $\mathcal{L}_k$ represents the loss term for the $k$-th task (which includes $\mathcal{L}{\text{info}}$, $\mathcal{L}_{\text{triplet}}$, $\mathcal{L}_{\text{adv}}$, and $\mathcal{L}_{\text{Decouple}}$), and $w_k = \text{exp}(s_k)$ is the task weight, which is dynamically adjusted by learning the task uncertainty parameter $s_k$.The hyperparameter $\alpha$ is used to control the strength of the GradNorm loss, while $\lambda$ serves as the regularization coefficient.
+Here, $(a, p, n)$ represent the identity features of the anchor, positive, and negative samples, respectively; $||\cdot||_2$ denotes the L2 norm; and $m$ is the margin parameter used to enforce a minimum distance gap between positive and negative pairs.
+
+\noindent In training with multiple tasks, differing loss scales can cause one task to dominate. We adopt GradNorm to balance the training process by dynamically adjusting the gradient norm of each task:
+\begin{equation} \label{eq:gradnorm} \mathcal{L}{_\text{GradNorm}} = \sum_k | \nabla{\theta} (w_k \mathcal{L}_k) - \tilde{r}k G{\text{ref}} | \end{equation}
+Here, $\nabla{\theta} (w_k \mathcal{L}k)$ represents the gradient of the weighted loss of task $k$, $w_k \mathcal{L}_k$, with respect to the shared parameters $\theta$. The term $||\cdot||_1$ denotes the L1 norm, which emphasizes a linear penalty on the deviation. $\tilde{r}_k = (\mathcal{L}_k / \mathcal{L}_k^0) / \bar{r}$ is the normalized loss ratio, where $\mathcal{L}_k^0$ is the initial loss of task $k$ at the start of training, serving as a baseline, and $\bar{r}$ is the average of the loss ratios over all tasks. $G_{\text{ref}}$ is a reference gradient norm, typically set to the gradient norm of the first task, $||\nabla{\theta}(w_1\mathcal{L}1)||$.
+
+\noindent This mechanism enforces a gradient balance among tasks during training by minimizing the L1 deviation between the actual gradient norm and a target value, $\tilde{r}_k G_{ref}$. Furthermore, to prevent instability caused by the abnormal scaling of task weights $w_k$, we add a regularization term, $\lambda \sum_k (\log w_k)^2$, to the total loss. This term effectively suppresses large discrepancies among the task weights by penalizing the square of their logarithms, thereby improving training stability. Finally, the overall loss function is defined as follows:
+\begin{equation} \label{eq:total} \mathcal{L}{_\text{Total}} = \sum_k w_k \mathcal{L}_k + \alpha \mathcal{L}{_\text{GradNorm}} + \lambda \sum_k (\log w_k)^2\end{equation}
+Here, $\mathcal{L}_k$ represents the loss term for task $k$ (which includes $\mathcal{L}_{\text{info}}$, $\mathcal{L}_{\text{triplet}}$, $\mathcal{L}_{\text{adv}}$, and $\mathcal{L}_{\text{Decouple}}$), and $w_k = \text{exp}(s_k)$ is the task weight, which is dynamically adjusted by learning the task uncertainty parameter $s_k$. The hyperparameter $\alpha$ is used to control the strength of the GradNorm loss, while $\lambda$ serves as the regularization coefficient.

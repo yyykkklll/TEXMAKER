@@ -14,17 +14,17 @@
 \label{sec:4.2}
 \noindent Our model employs the `bert-base-uncased` model, which is pre-trained, as the text encoder with a hidden dimensionality of 768. We use `vit-base-patch16-224` as the visual encoder. All images are resized to $224 \times 224$ pixels. The BDAM module processes visual tokens through multiple layers of self-attention and cross-attention, disentangling them into identity and clothing features of 768 dimensions each. A Mamba fusion module with two layers, configured with an input and output dimension of 256, a state dimension of 16, and a convolutional kernel size of 4, integrates the multimodal representations. The dropout rate is set to 0.1 throughout.
 
-\noindent Training utilizes the Adam optimizer with a learning rate of $1 \times 10^{-4}$, weight decay of $1 \times 10^{-3}$, and cosine annealing scheduling. The loss function for multiple tasks combines InfoNCE, triplet, clothing adversarial, HSIC decoupling, and gate regularization terms. We employ GradNorm for dynamic task weighting with $\alpha = 1.5$ and a weight learning rate of 0.025. Task weights are normalized to sum to the number of tasks and clipped to the range $[10^{-4}, 10]$. Gradient norms are computed on the final shared layer, with an additional regularization coefficient for log variance of $1 \times 10^{-3}$.
+\noindent Training utilizes the Adam optimizer with a learning rate of $1 \times 10^{-4}$, weight decay of $1 \times 10^{-3}$, and cosine annealing scheduling. The loss function for multiple tasks combines InfoNCE, triplet, clothing alignment, HSIC decoupling, and gate regularization terms. We employ GradNorm for dynamic task weighting with $\alpha = 1.5$ and a weight learning rate of 0.025. Task weights are normalized to sum to the number of tasks and clipped to the range $[10^{-4}, 10]$. Gradient norms are computed on the final shared layer, with an additional regularization coefficient for log variance of $1 \times 10^{-3}$.
 
 \noindent For data augmentation, we extract style embeddings using `clip-vit-base-patch32`, cluster them via DBSCAN, and generate descriptions consistent with the style for identity and clothing through `ChatGPT-4`. All splits are enforced at the identity level to prevent data leakage. Each experiment is repeated with random seeds 0, 1, and 2; we select the best checkpoint based on validation performance and report the mean across the three runs.
 
 \subsection{Parameter Analysis}
 \label{sec:param_analysis}
-\noindent Although the identity and clothing branches in BDAM adopt identical architectures, they learn distinctly different representations through independent parameterization and asymmetric supervision.
+\noindent Although the identity and clothing stream in BDAM adopt identical architectures, they learn distinctly different representations through independent parameterization and asymmetric supervision.
 The BDAM gating mechanism generates weights at the dimension level $g_{\text{dis}} \in \mathbb{R}^{B \times D}$ via $g_{\text{dis}} = \sigma(W_g[\hat{f}_{id}; \hat{f}_{clo}] + b_g)$. This yields complementary coefficients $W_{id} = g_{\text{dis}}$ and $W_{clo} = 1-g_{\text{dis}}$ that satisfy the constraint $W_{id} + W_{clo} = \mathbf{1}$.
-This constraint introduces competitive pressure between branches, encouraging each to specialize in unique semantic patterns.
+This constraint introduces competitive pressure between stream, encouraging each to specialize in unique semantic patterns.
 
-\noindent The learning dynamics are governed by asymmetric loss signals. The identity branch receives supervision from InfoNCE and triplet losses, steering it toward attributes that are invariant to the person, such as body shape and posture. In contrast, the clothing branch is guided by matching and adversarial losses toward features centered on appearance. The decoupling loss based on HSIC enforces statistical independence by orthogonalizing the two feature subspaces in a Reproducing Kernel Hilbert Space, thereby preventing representational collapse.
+\noindent The learning dynamics are governed by asymmetric loss signals. The identity stream receives supervision from InfoNCE and triplet losses, steering it toward attributes that are invariant to the person, such as body shape and posture. In contrast, the clothing stream is guided by matching and alignment losses toward features centered on appearance. The decoupling loss based on HSIC enforces statistical independence by orthogonalizing the two feature subspaces in a Reproducing Kernel Hilbert Space, thereby preventing representational collapse.
 
 \noindent Similarly, the fusion module employs an adaptive gating mechanism to balance modality contributions.
 The fusion gate $g_{\text{fus}} \in \mathbb{R}^{B \times 2}$ is computed as $g_{\text{fus}} = \text{Softmax}(W_f[f_{\text{img}}; f_{\text{txt}}])$, producing normalized modality weights $W_{\text{img}} = g_{\text{fus}}[:, 0]$ and $W_{\text{txt}} = g_{\text{fus}}[:, 1]$ satisfying $W_{\text{img}} + W_{\text{txt}} = 1$.
@@ -41,7 +41,7 @@ This mechanism operates at the instance level, dynamically adjusting modality im
 The BDAM identity weights exhibit a distribution skewed to the right, with a mean of 0.61 and standard deviation of 0.17, substantially exceeding the clothing weights which concentrate around 0.38.
 This asymmetry confirms that features relevant to identity dominate the final representation, aligning with our design centered on identity.
 The bimodal separation pattern indicates the gate has learned to discriminate between samples with strong identity cues versus those requiring additional contextual information.
-In contrast, the fusion module maintains nearly equal modality contributions, with means of 0.52 for image and 0.48 for text, both with moderate variance around 0.10.
+In contrast, the fusion module maintains nearly equal modality contributions, with means of 0.52 and 0.48, both with moderate variance around 0.10.
 This balanced distribution, centered near the uniform baseline of 0.5, demonstrates stable alignment between modalities without collapse toward either one.
 
 \noindent These empirical observations corroborate our theoretical design: BDAM enforces semantic disentanglement through asymmetric supervision and regularization via HSIC, while the fusion gate achieves dynamic equilibrium via Softmax normalization and balanced loss weighting.
@@ -71,7 +71,7 @@ This balanced distribution, centered near the uniform baseline of 0.5, demonstra
 \end{table}
 
 \noindent \textbf{Disentanglement Module.} As shown in \cref{tab:ablation_bdam}, incorporating BDAM yields substantial improvements over the baseline, demonstrating the effectiveness of explicit disentanglement between identity and clothing.
-The subsequent analysis of its components confirms the necessity of each design choice. Removing the bidirectional cross attention, ablating the gating mechanism, or reducing the network depth to three layers all result in significant performance degradation. This indicates that the semantic interaction between branches, the adaptive feature control, and sufficient model depth are all essential for achieving robust disentanglement.
+The subsequent analysis of its components confirms the necessity of each design choice. Removing the bidirectional cross attention, ablating the gating mechanism, or reducing the network depth to three layers all result in significant performance degradation. This indicates that the semantic interaction between stream, the adaptive feature control, and sufficient model depth are all essential for achieving robust disentanglement.
 The learned gate weight distributions in \cref{fig:gate_distribution} provide additional evidence, showing that the gating mechanism automatically achieves semantic specialization in BDAM and modality balance in fusion through end to end training.
 
 \begin{figure}[htbp]
@@ -120,15 +120,15 @@ Furthermore, the gating mechanism and modality alignment layers provide essentia
     \footnotesize
     \begin{tabular}{lcccc}
         \toprule
-        Method          & mAP(\%) $\uparrow$ & R-1(\%) $\uparrow$ & R-5(\%) $\uparrow$ & R-10(\%) $\uparrow$ \\
+        Method         & mAP(\%) $\uparrow$ & R-1(\%) $\uparrow$ & R-5(\%) $\uparrow$ & R-10(\%) $\uparrow$ \\
         \midrule
         \rowcolor{gray!20}
-        Full Model      & 72.61              & 79.93              & 92.95              & 96.47               \\
-        w/o InfoNCE     & 28.14              & 36.55              & 55.21              & 65.83               \\
-        w/o Triplet     & 67.22              & 74.89              & 88.15              & 93.12               \\
-        w/o Adversarial & 69.15              & 76.92              & 89.53              & 94.22               \\
-        w/o Decoupling  & 70.03              & 77.81              & 90.11              & 94.98               \\
-        w/o Gate Reg.   & 71.98              & 79.23              & 91.35              & 95.71               \\
+        Full Model     & 72.61              & 79.93              & 92.95              & 96.47               \\
+        w/o InfoNCE    & 28.14              & 36.55              & 55.21              & 65.83               \\
+        w/o Triplet    & 67.22              & 74.89              & 88.15              & 93.12               \\
+        w/o Alignment  & 69.15              & 76.92              & 89.53              & 94.22               \\
+        w/o Decoupling & 70.03              & 77.81              & 90.11              & 94.98               \\
+        w/o Gate Reg.  & 71.98              & 79.23              & 91.35              & 95.71               \\
         \bottomrule
     \end{tabular}
     \vspace{-0.2cm}
@@ -136,7 +136,7 @@ Furthermore, the gating mechanism and modality alignment layers provide essentia
 
 \noindent \textbf{Loss Functions.} To validate the necessity of each loss component, we systematically remove individual terms while keeping all other settings fixed. As shown in \cref{tab:ablation_loss}, every loss term contributes positively to the final performance.
 The InfoNCE and triplet losses emerge as foundational. Removing InfoNCE causes a catastrophic performance collapse, underscoring the critical importance of contrastive alignment between modalities. Ablating the triplet loss also significantly degrades retrieval accuracy, confirming the necessity of strong identity discrimination within a modality.
-The losses specific to disentanglement, namely the adversarial and HSIC decoupling losses, are likewise essential. The performance degradation upon removing either term demonstrates that architectural design alone is insufficient; explicit constraints imposed by the loss function are required to enforce the separation of identity and clothing.
+The losses specific to disentanglement, namely the alignment and HSIC decoupling losses, are likewise essential. The performance degradation upon removing either term demonstrates that architectural design alone is insufficient; explicit constraints imposed by the loss function are required to enforce the separation of identity and clothing.
 Finally, the minor but consistent degradation from removing gate regularization validates its auxiliary role in stabilizing the learned gating mechanisms.
 
 \begin{table}[htbp]

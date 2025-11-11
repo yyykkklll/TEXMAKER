@@ -73,8 +73,16 @@ By minimizing this value, the loss encourages the features to be statistically i
 \subsection{Semantic enhancement}
 \noindent We employ an MLLM, as detailed in Section~\ref{sec:4.2}, to automatically generate fine-grained identity and clothing descriptions for pedestrians. 
 This approach reduces the burden of manual annotation and enriches the available supervision. 
+Figure~\ref{fig:mllm_pipeline} illustrates this generation pipeline.
 Prior work, notably HAM~\cite{jiangModelingThousandsHuman2025}, shows that modeling annotator styles can steer an MLLM to produce diverse texts. 
 Adapting this core insight, we extend the pipeline to meet our model's design goals.
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.9\linewidth]{MLLM.pdf}
+    \caption{Overview of the offline pipeline using an MLLM to generate decoupled identity and clothing descriptions. Style prompts are derived via CLIP and DBSCAN to enhance diversity.}
+    \label{fig:mllm_pipeline}
+\end{figure}
 
 \noindent We first use the CLIP text encoder to embed the original descriptions into vectors of a fixed dimension. Using prompts, an MLLM generalizes and substitutes entity attributes to emphasize expression style rather than content. 
 We then cluster these style embeddings with DBSCAN~\cite{hanafiFastDBSCANAlgorithm2022}, which adaptively discovers dense regions without predefining the cluster count. 
@@ -84,10 +92,6 @@ This setup aligns the learned style categories with the identity and clothing di
 \noindent A dual prompt generator guides the MLLM to output two distinct texts per image: one description for identity, covering biological traits, and another for clothing, detailing apparel, colors, and patterns. 
 We control the generation process with length and temperature constraints. 
 We also apply syntax checks and validation for attribute coverage to ensure the outputs remain grammatical, structured, and parsable.
-
-\noindent In summary, our adaptations deliver flexible style modeling via DBSCAN and a decoupled dual description mechanism. 
-This process strengthens the distinctiveness and diversity of identity and clothing semantics. 
-The resulting supervision improves data expressiveness and provides richer training signals for BDAM.
 
 \subsection{Feature Fusion}
 \noindent For efficient feature fusion that is sensitive to semantics, we introduce the Mamba SSM. 

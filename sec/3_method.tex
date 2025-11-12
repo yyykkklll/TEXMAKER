@@ -87,10 +87,11 @@ Adapting this core insight, we extend the pipeline to meet our model's design go
 \noindent We first use the CLIP text encoder to embed the original descriptions into vectors of a fixed dimension. Using prompts, an MLLM generalizes and substitutes entity attributes to emphasize expression style rather than content. 
 We then cluster these style embeddings with DBSCAN~\cite{hanafiFastDBSCANAlgorithm2022}, which adaptively discovers dense regions without predefining the cluster count. 
 To stabilize the clusters, we reassign noise points and merge small clusters. 
+These discovered style categories are then used to formulate textual prompts, such as "Use a very detailed, descriptive style," which guide the MLLM's generation tone.
 This setup aligns the learned style categories with the identity and clothing disentanglement expected by BDAM.
 
-\noindent A dual prompt generator guides the MLLM to output two distinct texts per image: one description for identity, covering biological traits, and another for clothing, detailing apparel, colors, and patterns. 
-We control the generation process with length and temperature constraints. 
+\noindent A dual prompt generator, using content-specific templates (e.g., "Describe the person's identity" and "Describe the person's clothing"), guides the MLLM to output two distinct texts per image: one description for identity, covering biological traits, and another for clothing, detailing apparel, colors, and patterns. 
+We control the generation process with length and temperature constraints.
 We also apply syntax checks and validation for attribute coverage to ensure the outputs remain grammatical, structured, and parsable.
 
 \subsection{Feature Fusion}

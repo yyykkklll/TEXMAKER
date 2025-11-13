@@ -1,4 +1,3 @@
-\section{Related Work}
 \subsection{Feature Disentanglement}
 \noindent Feature disentanglement~\cite{wangDisentangledRepresentationLearning2024} aims to separate semantically distinct factors in feature space to improve interpret ability and generalization.
 Early approaches often leveraged generative models (VAEs, GANs)\cite{liuMultitaskAdversarialNetwork2018} to partition latent codes into structured factors.
@@ -6,8 +5,7 @@ More recently, disentanglement has expanded beyond generation to image classific
 Mainstream strategies include minimax multi-task adversarial training that jointly optimizes an encoder and a style discriminator~\cite{liuMultitaskAdversarialNetwork2018}; schemes based on metric learning such as DFR~\cite{chengDisentangledFeatureRepresentation2021} with a Gradient Reversal Layer~\cite{ganinUnsupervisedDomainAdaptation2015} to decorrelate factors;
 and orthogonal linear projections that separate visual and textual embeddings under CLIP~\cite{materzynskaDisentanglingVisualWritten2022}.
 
-\noindent In the ReID domain, disentanglement typically separates identity-relevant signals from nuisances \cite{liDisentanglingIdentityFeatures2024,azadActivityBiometricsPersonIdentification2024}. Generative designs model these factors independently.
-In vehicle Re-ID, DFLNet\cite{baiDisentangledFeatureLearning2020} jointly extracts orientation-specific and generic features. 
+\noindent In the ReID domain, disentanglement typically separates identity-relevant signals from nuisances \cite{liDisentanglingIdentityFeatures2024,azadActivityBiometricsPersonIdentification2024}. 
 For occlusion, ProFD~\cite{cuiProFDPromptGuidedFeature2024} uses text prompts to isolate body-part features.
 Re-ID focused on clothing changes often adopts dual-stream architectures to counter appearance shifts and camera bias~\cite{liDisentanglingIdentityFeatures2024}.
 

@@ -20,15 +20,17 @@
 
 \subsection{Parameter Analysis}
 \label{sec:param_analysis}
-\noindent Although the identity and clothing stream in BDAM adopt identical architectures, they learn distinctly different representations through independent parameterization and asymmetric supervision.
-The BDAM gating mechanism generates weights at the dimension level $g_{\text{dis}} \in \mathbb{R}^{B \times D}$ via $g_{\text{dis}} = \sigma(W_g[\hat{f}_{id}; \hat{f}_{clo}] + b_g)$. This yields complementary coefficients $W_{id} = g_{\text{dis}}$ and $W_{clo} = 1-g_{\text{dis}}$ that satisfy the constraint $W_{id} + W_{clo} = \mathbf{1}$.
-This constraint introduces competitive pressure between stream, encouraging each to specialize in unique semantic patterns.
+\noindent The BDAM's identity and clothing streams, though architecturally identical, learn different representations via independent parameterization and asymmetric supervision.
+Its gating mechanism, $g_{\text{dis}} \in \mathbb{R}^{B \times D}$ via $g_{\text{dis}} = \sigma(W_g[\hat{f}_{id}; \hat{f}_{clo}] + b_g)$, generates complementary, dimension-level coefficients $W_{id} = g_{\text{dis}}$ and $W_{clo} = 1-g_{\text{dis}}$.
+The $W_{id} + W_{clo} = \mathbf{1}$ constraint introduces competitive pressure, forcing stream specialization.
 
-\noindent The learning dynamics are governed by asymmetric loss signals. The identity stream receives supervision from InfoNCE and triplet losses, steering it toward attributes that are invariant to the person, such as body shape and posture. In contrast, the clothing stream is guided by matching and alignment losses toward features centered on appearance. The decoupling loss based on HSIC enforces statistical independence by orthogonalizing the two feature subspaces in a Reproducing Kernel Hilbert Space, thereby preventing representational collapse.
+\noindent The learning is governed by asymmetric losses. The identity stream is guided by InfoNCE and triplet losses toward invariant attributes (e.g., body shape). In contrast, the clothing stream uses matching and alignment losses to focus on appearance.
+A decoupling loss based on HSIC enforces statistical independence by orthogonalizing the two subspaces, preventing representational collapse.
 
-\noindent Similarly, the fusion module employs an adaptive gating mechanism to balance modality contributions.
-The fusion gate $g_{\text{fus}} \in \mathbb{R}^{B \times 2}$ is computed as $g_{\text{fus}} = \text{Softmax}(W_f[f_{\text{img}}; f_{\text{txt}}])$, producing normalized modality weights $W_{\text{img}} = g_{\text{fus}}[:, 0]$ and $W_{\text{txt}} = g_{\text{fus}}[:, 1]$ satisfying $W_{\text{img}} + W_{\text{txt}} = 1$.
-This mechanism operates at the instance level, dynamically adjusting modality importance based on input characteristics, whereas the disentanglement gate provides control at the dimension level within the visual stream.
+\noindent Similarly, the fusion module employs an adaptive gate to balance modality contributions.
+This fusion gate computes $g_{\text{fus}} = \text{Softmax}(W_f[f_{\text{img}}; f_{\text{txt}}])$ to produce normalized weights $W_{\text{img}}$ and $W_{\text{txt}}$ satisfying $W_{\text{img}} + W_{\text{txt}} = 1$.
+This mechanism operates at the instance level ($g_{\text{fus}} \in \mathbb{R}^{B \times 2}$), unlike the BDAM's dimension-level gate, to dynamically adjust modality importance.
+
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=\linewidth]{gate_weight_distribution.pdf}
@@ -37,14 +39,13 @@ This mechanism operates at the instance level, dynamically adjusting modality im
         (b) Fusion module maintains balanced modality contributions, confirming effective cross-modal integration without modality dominance.}
     \label{fig:gate_distribution}
 \end{figure}
-\noindent To empirically validate these mechanisms, we analyze the distributions of learned gate weights across the test set, as shown in \cref{fig:gate_distribution}.
-The BDAM identity weights exhibit a distribution skewed to the right, with a mean of 0.61 and standard deviation of 0.17, substantially exceeding the clothing weights which concentrate around 0.38.
-This asymmetry confirms that features relevant to identity dominate the final representation, aligning with our design centered on identity.
-The bimodal separation pattern indicates the gate has learned to discriminate between samples with strong identity cues versus those requiring additional contextual information.
-In contrast, the fusion module maintains nearly equal modality contributions, with means of 0.52 and 0.48, both with moderate variance around 0.10.
-This balanced distribution, centered near the uniform baseline of 0.5, demonstrates stable alignment between modalities without collapse toward either one.
 
-\noindent These empirical observations corroborate our theoretical design: BDAM enforces semantic disentanglement through asymmetric supervision and regularization via HSIC, while the fusion gate achieves dynamic equilibrium via Softmax normalization and balanced loss weighting.
+\noindent We empirically validate these mechanisms by analyzing the learned gate weights shown in \cref{fig:gate_distribution}.
+The BDAM identity weights (mean 0.61) substantially exceed the clothing weights (mean 0.38).
+This asymmetry, along with a bimodal separation pattern, confirms the gate's identity-centric design and its ability to discriminate cues.
+In contrast, the fusion module maintains nearly equal contributions (means 0.52 and 0.48), demonstrating stable alignment without modality collapse.
+
+\noindent These empirical observations corroborate our theoretical design: BDAM enforces semantic disentanglement through asymmetric supervision and HSIC regularization, while the fusion gate achieves dynamic equilibrium via Softmax normalization.
 
 \subsection{Ablation Study}
 \noindent We conduct systematic ablation studies to validate the contribution of each architectural component and loss term. All experiments are performed on CUHK-PEDES unless otherwise specified.

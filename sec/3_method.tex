@@ -102,6 +102,14 @@ It processes the decoupled visual features $f_{\text{id}}^{\text{i}}$ and the te
 Notably, the decoupled visual clothing feature $f_{\text{clo}}^{\text{i}}$ is \textit{intentionally discarded} during fusion. 
 This design is central to our goal: the BDAM, supervised by $\mathcal{L}_{\text{aln}}$ and $\mathcal{L}_{\text{Decouple}}$, is tasked with purging information irrelevant to identity into $f_{\text{clo}}^{\text{i}}$. 
 By excluding this feature from the final fusion, the model is forced to learn a representation based purely on stable identity semantics.
+The overall architecture of this fusion process is illustrated in Figure~\ref{fig:fusion_module}.
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=\linewidth]{Fusion.pdf}
+    \caption{The architecture of our Mamba Fusion Module. It adaptively fuses aligned visual identity ($f_{\text{id}}^{\text{i}}$) and textual identity ($f_{\text{id}}^{\text{t}}$) features via a gating mechanism (AGM) and stacked Mamba layers, while intentionally discarding the clothing features ($f_{\text{clo}}^{\text{i}}$).}
+    \label{fig:fusion_module}
+\end{figure}
 
 \noindent Following this alignment, a gating mechanism achieves dynamic weighted fusion. 
 It outputs a weight vector $g_{\text{fus}} \in \mathbb{R}^{B \times 2}$, which is normalized via a SoftMax layer to produce image $W_{img}$ and text $W_{txt}$ weights, satisfying $W_{img} + W_{txt} = 1$. 
